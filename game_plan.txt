@@ -1,0 +1,38 @@
+grid based world
+mobs/NPCs cannot overlap
+
+player moving from one tile to another consumes an action
+player attacking consumes an action
+player turning direction DOES NOT consume an action
+accessing and using the menu for anything DOES NOT consume an action
+speaking to NPCs DOES NOT consume an action
+
+mobs moving from one tile to another consumes an action
+mobs attacking consumes an action
+
+each iteration of the game loop adds one action point to each mob
+as long as a mob has more action points than its energy cost, it acts
+mobs will only act when within ACTION_RANGE (some constant) of the player
+mobs are only visible when in the player's FOV (?)
+background is always visible (?)
+
+events stored in queue
+each event is a sequence of functions & params to execute
+the event itself is also passed as a param to the function
+per game loop, each active event, if ready to continue, executes its next-up function
+an event can also start an event immediately (adding to list of active events)
+
+active tween effects are stored in a queue as well
+
+e.g. 1 event carrying out 2 simultaneous animations:
+[
+lock, ()
+queue_tween, (sprite1, target1_1, duration1_1, 't1_1')
+queue_tween, (sprite2, target2_1, duration2_1, 't2_1')
+await_tween, ('t1_1')
+await_tween, ('t2_1')
+do_damage, (sprite1, 10)
+unlock, ()
+]
+
+gamestates are in a stack rendered bottom-up, updated top-down
