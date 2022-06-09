@@ -15,7 +15,7 @@ from typing import (
 
 import numpy as np
 
-from roguelike.awaiting import *
+from .awaiting import *
 
 class AnimatableMixin:
     """Represents anything that has 2D position and scale and 1D rotation that
@@ -47,14 +47,18 @@ class Tween:
         """Applies an animation
         delta_time: time in seconds to apply this animation for
         """
+        if self.duration == 0 and self.target and self.prop:
+            # Check specifically for 0 duration case
+            setattr(self.target, self.prop, self.end)
+            return False
         if not self.is_active():
-            return 0
+            return False
         self.elapsed += delta_time
         weight = min(1.0, max(0.0, self.elapsed / self.duration))
         value = self.start + (self.end - self.start) * weight
         if self.target and self.prop:
             setattr(self.target, self.prop, value)
-        return max(0, self.elapsed - self.duration)
+        return True
 
 @dataclass
 class Animation(AwaitableMixin):
@@ -78,7 +82,7 @@ class Animation(AwaitableMixin):
         """Animates any active tweens and returns whether the animation is
         still going"""
         self.active_tweens[:] = [tween for tween in self.active_tweens if
-                                 tween.update(delta_time) == 0]
+                                 tween.update(delta_time)]
         self.elapsed += delta_time
         while self.index < len(self.tweens):
             start_time, tween = self.tweens[self.index]

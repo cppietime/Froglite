@@ -3,18 +3,17 @@ import dataclasses
 import moderngl as mgl
 import pygame as pg
 
-from roguelike import (
+from roguelike import settings
+from roguelike.engine import (
     event_manager,
-    game,
+    gamestate,
     inputs,
     renderer,
-    settings,
     sprite,
     text,
     tween
 )
 from roguelike.states import (
-    gamestate,
     ui
 )
 
@@ -27,11 +26,17 @@ font = rend.get_font('Ariel', 100)
 img = rend.load_texture('test_sprite.png')
 spr = sprite.Sprite(img, (0, 0), img.size)
 
+img_v = rend.load_texture('test_mask.png')
+spr_v = sprite.Sprite(img_v, (0, 0), (400, 400))
+
 inactive = ui.Label(spr, (50, 50, 200, 50), bg_color=(.75,.75,.75,.5), text="Inactive", text_rect=(50, 50, 200, 50), font=font)
 active = ui.Label(spr, (50, 50, 200, 50), bg_color=(1,1,1,1), text="ACTIVE", text_rect=(50, 50, 200, 50), font=font)
 label = ui.Label(None, None, None, text="Sep", text_rect=(50, 50, 200, 50), font=font)
 button = ui.TwoLabelButton(inactive=inactive, active=active)
 button2 = ui.TwoLabelButton(inactive=inactive, active=active)
+q_inactive = ui.Label(None, None, None, text="Quit", text_rect=(50, 50, 200, 50), font=font, text_color=(1, 0, 0.4, .9))
+q_active = ui.Label(None, None, None, text="QUIT", text_rect=(50, 50, 200, 50), font=font, text_color=(1, 1, 1, 1))
+q_button = ui.TwoLabelButton(inactive=q_inactive, active=q_active, command = gamestate.GameState.die)
 
 bglabel = dataclasses.replace(inactive)
 bglabel.bg_rect = (0, 0, 200, 400)
@@ -56,16 +61,22 @@ def _wait_for_anim(state, event):
 button.command = lambda state: state.queue_event(event_manager.Event(_wait_for_anim))
 button2.command = lambda state: print("But I was activated!")
 
+button3 = dataclasses.replace(button)
+button4 = dataclasses.replace(button2)
+
+holder1 = ui.WidgetHolder(bglabel, [button , button2, q_button], horizontal=False, spacing=50, zero_point=0)
+holder2 = ui.WidgetHolder(bglabel, [button3, button4], horizontal=False, spacing=50, zero_point=0)
 
 inputstate = inputs.InputState()
 
 manager = gamestate.GameStateManager(inputstate=inputstate)
 state = ui.MenuState()
-state.widgets.background = bglabel
-state.widgets.widgets.append(button)
-state.widgets.widgets.append(label)
-state.widgets.widgets.append(button2)
-state.widgets.spacing = 100
+state.widget.widget.background = bglabel
+state.widget.widget.horizontal = True
+state.widget.widget.widgets.append(ui.MetaWidget(holder1, (0, 0, 250, 150)))
+state.widget.widget.widgets.append(ui.MetaWidget(holder2, (0, 0, 250, 150)))
+state.widget.bounding_rect = (0, 0, 500, 150)
+state.widget.widget.spacing = 250
 manager.push_state(state)
 
 clock = pg.time.Clock()
@@ -81,14 +92,17 @@ while running:
     inputstate.record_mouse()
     
     rend.screen.use()
-    rend.clear(0, 0, 0, 1)
+    rend.clear(0, 0, 0, 0)
     
     # button.render(rend, (0, 0))
     manager.update(delta_time)
     manager.render(delta_time, rend)
     
+    if not manager.any_states_active():
+        running = False
+    
     pg.display.flip()
     delta_time = clock.tick(144) / 1000
-    print(clock.get_fps())
+    # print(clock.get_fps())
 
 pg.quit()

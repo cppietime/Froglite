@@ -7,7 +7,7 @@ from typing import (
 import moderngl as mgl
 import pygame as pg
 
-from roguelike import (
+from . import (
     sprite
 )
 

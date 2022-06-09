@@ -1,4 +1,4 @@
-from roguelike import (
+from . import (
     awaiting,
     event_manager,
     tween
@@ -41,6 +41,10 @@ class GameState(event_manager.EventManagerMixin,
     def on_uncovered(self) -> None:
         """Called when a state is uncovered from a pop"""
         pass
+    
+    def die(self) -> None:
+        """Pop self"""
+        self.manager.pop_state()
 
 class GameStateManager:
     def __init__(self, *args, **kwargs):
@@ -71,3 +75,6 @@ class GameStateManager:
         if len(self.state_stack) > 0:
             self.state_stack[-1].on_uncovered()
         return removed
+    
+    def any_states_active(self) -> bool:
+        return len(self.state_stack) != 0

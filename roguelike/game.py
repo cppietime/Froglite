@@ -2,11 +2,11 @@ from collections import defaultdict
 
 import pygame as pg
 
-from roguelike import (
+from roguelike.engine import (
+    gamestate,
     inputs,
     renderer
 )
-from .states import gamestate
 
 def gameloop(screen, gl_ctx: 'Context', max_fps: int) -> None:
     clock = pg.time.Clock()

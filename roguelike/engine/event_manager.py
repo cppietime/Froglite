@@ -18,7 +18,7 @@ from typing import (
     Tuple
 )
 
-from roguelike.awaiting import *
+from .awaiting import *
 
 class EventManagerMixin:
     """A mixin for types that can manage events, such as a game state"""

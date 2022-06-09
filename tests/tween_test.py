@@ -1,4 +1,4 @@
-from roguelike import event_manager, tween
+from roguelike.engine import event_manager, tween
 
 rect = tween.AnimatableMixin()
 

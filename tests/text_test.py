@@ -1,10 +1,9 @@
 import moderngl as mgl
 import pygame as pg
 
-from roguelike import (
-    game,
+from roguelike import settings
+from roguelike.engine import (
     renderer,
-    settings,
     sprite,
     text,
     tween

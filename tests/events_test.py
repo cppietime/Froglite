@@ -1,4 +1,4 @@
-from roguelike import event_manager, awaiting
+from roguelike.engine import event_manager, awaiting
 
 # event0 = event_manager.Event([
     # (lambda state, event: print("Event run!"), ()),

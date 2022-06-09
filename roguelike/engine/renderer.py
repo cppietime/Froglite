@@ -13,7 +13,8 @@ import moderngl as mgl
 import numpy as np
 import pygame as pg
 
-from roguelike import (
+from . import (
+    assets,
     shaders,
     sprite,
     text
@@ -31,6 +32,8 @@ class Renderer:
         self.programs = {}
         self.vaos = {}
         self.fbos = {}
+        self.fbo_stack = []
+        self.fbo_stack_top = -1
         self.charbanks = {}
         self.screen = self.gl_ctx.screen
         self.screen_size = self.screen.size
@@ -86,14 +89,40 @@ class Renderer:
             self.fbos[name] = fbo
         return fbo
     
+    def current_fbo(self) -> mgl.Framebuffer:
+        return self.gl_ctx.fbo
+    
+    def push_fbo(self) -> mgl.Framebuffer:
+        """Activates the next-up FBO"""
+        self.fbo_stack_top += 1
+        if self.fbo_stack_top == len(self.fbo_stack):
+            new_fbo = self.register_fbo(None,
+                                        self.screen_size,
+                                        1,
+                                        False,
+                                        False)
+            self.fbo_stack.append(new_fbo)
+        new_fbo = self.fbo_stack[self.fbo_stack_top]
+        new_fbo.use()
+        return new_fbo
+    
+    def pop_fbo(self) -> mgl.Framebuffer:
+        """Does not change FBO activation"""
+        if self.fbo_stack_top < 0:
+            raise AttributeError('Stack already empty')
+        old_fbo = self.fbo_stack[self.fbo_stack_top]
+        self.fbo_stack_top -= 1
+        return old_fbo
+    
     def load_texture(self,
                      imgname: str,
                      **kwargs) -> mgl.Texture:
-        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-            basedir = sys._MEIPASS
-        else:
-            basedir = os.path.join(os.path.split(__file__)[0], os.pardir)
-        assetdir = os.path.join(basedir, 'assets', imgname)
+        # if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # basedir = sys._MEIPASS
+        # else:
+            # basedir = os.path.join(os.path.split(__file__)[0], os.pardir)
+        # assetdir = os.path.join(basedir, 'assets', imgname)
+        assetdir = assets.asset_path(imgname)
         img = pg.transform.flip(pg.image.load(assetdir).convert_alpha(),
                                 False,
                                 True) # Flip vertically because OpenGL

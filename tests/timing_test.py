@@ -1,4 +1,4 @@
-from roguelike import event_manager
+from roguelike.engine import event_manager
 
 def _wait(state, event):
     print("Waiting for 1sec")
