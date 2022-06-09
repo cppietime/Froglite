@@ -4,12 +4,13 @@ from dataclasses import (
     field
 )
 from enum import Enum
-import pygame as pg
 from typing import (
     Dict,
     List,
     Tuple
 )
+
+import pygame as pg
 
 class KeyState(Enum):
     PRESSED = 0
@@ -37,7 +38,7 @@ class InputState:
     input_focus: bool = True
     app_active: bool = True
     
-    def reset_input(self):
+    def reset_input(self) -> None:
         for state in self.keys.values():
             state[KeyState.UP] = state[KeyState.DOWN] = False
         for state in self.buttons.values():
@@ -45,7 +46,7 @@ class InputState:
         for state in self.focus.values():
             state[KeyState.UP] = state[KeyState.DOWN] = False
     
-    def process_event(self, event):
+    def process_event(self, event: 'Event') -> None:
         if event.type == pg.ACTIVEEVENT and 'state' in event.dict:
             if event.gain == 0:
                 self.focus[event.state][KeyState.PRESSED] = False
@@ -66,8 +67,6 @@ class InputState:
             self.keys[event.key][KeyState.PRESSED] = True
             self.keys[event.key][KeyState.DOWN] = True
 
-    def record_mouse(self):
+    def record_mouse(self) -> None:
         self.mouse_pos = pg.mouse.get_pos()
         self.mouse_delta = pg.mouse.get_rel()
-        # print(self.keys)
-        # print(self.buttons)

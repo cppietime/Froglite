@@ -1,46 +1,57 @@
+from dataclasses import dataclass
+import os
+import sys
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Optional,
+    Tuple
+)
+
 import moderngl as mgl
 import numpy as np
+import pygame as pg
 
-_quad_vertex_src = \
-"""
-#version 330
-layout (location=0) in vec2 in_position;
-layout (location=1) in vec2 in_uv;
+from roguelike import (
+    shaders,
+    sprite,
+    text
+)
 
-out vec2 out_uv;
-
-uniform vec2 center_pos;
-uniform vec2 scale;
-uniform float angle;
-uniform float z;
-uniform vec2 uv_bottom_left;
-uniform vec2 uv_size;
-
-void main() {
-    vec2 scaled = scale * in_position;
-    float c = cos(angle);
-    float s = sin(angle);
-    vec2 rot = vec2(scaled.x * c - scaled.y * s, scaled.y * c + scaled.x * s);
-    
-    gl_Position = vec4(rot + center_pos, z, 1.0);
-    out_uv = vec2(uv_bottom_left + in_uv * uv_size);
-}
-"""
+Offset = Tuple[float, float]
+Color = Tuple[float, float, float, float]
 
 class Renderer:
-    def __init__(self, gl_ctx):
+    def __init__(self, gl_ctx, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.gl_ctx = gl_ctx
+        self.gl_ctx.enable(mgl.BLEND)
+        self.gl_ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
         self.programs = {}
         self.vaos = {}
         self.fbos = {}
+        self.charbanks = {}
+        self.screen = self.gl_ctx.screen
+        self.screen_size = self.screen.size
         self.create_defaults()
     
-    def register_program(self, name, vertex_shader, fragment_shader, varyings=()):
-        program = self.gl_ctx.program(vertex_shader=vertex_shader, fragment_shader=fragment_shader, varyings=varyings)
+    def register_program(self,
+                         name: str,
+                         vertex_shader: str,
+                         fragment_shader: str,
+                         varyings:Tuple[str]=()) -> mgl.Program:
+        program = self.gl_ctx.program(vertex_shader=vertex_shader,
+                                      fragment_shader=fragment_shader,
+                                      varyings=varyings)
         self.programs[name] = program
         return program
     
-    def register_vao(self, name, program, buffer_specs):
+    def register_vao(self,
+                     name: str,
+                     program: mgl.Program,
+                     buffer_specs: Iterable[Tuple[np.ndarray, str]])\
+                     -> mgl.VertexArray:
         _buffer_specs = []
         for spec in buffer_specs:
             array = spec[0]
@@ -50,101 +61,232 @@ class Renderer:
         self.vaos[name] = vao
         return vao
     
-    def register_fbo(self, name, size, num_tex, depth=True):
+    def register_fbo(self,
+                     name: str,
+                     size: Offset,
+                     num_tex: int,
+                     depth:bool=True,
+                     register:bool=True,
+                     tex_params:Dict[str,Any]={}) -> mgl.Framebuffer:
         textures = []
         for _ in range(num_tex):
-            texture = self.gl_ctx.texture(size, 4)
+            texture = self.gl_ctx.texture(size, 4, dtype='f2')
+            texture.repeat_x = False
+            texture.repeat_y = False
+            for key, value in tex_params.items():
+                setattr(texture, key, value)
             textures.append(texture)
         depth_att = None
         if depth:
             depth_att = self.gl_ctx.depth_texture(size)
+            depth_att.repeat_x = False
+            depth_att.repeat_y = False
         fbo = self.gl_ctx.framebuffer(tuple(textures), depth_att)
-        self.fbos[name] = fbo
+        if register:
+            self.fbos[name] = fbo
         return fbo
     
-    def create_defaults(self):
-        quad_program = self.register_program('quad', vertex_shader=_quad_vertex_src,
-            fragment_shader=\
-"""
-#version 330
-in vec2 out_uv;
-
-layout (location=0) out vec4 fragColor;
-
-uniform sampler2D tex;
-
-void main() {
-    fragColor = texture(tex, out_uv);
-}
-""", varyings = ('out_uv'))
-        
-        quad_buffer = np.array([
-            -1, -1, 0, 0,
-            1, -1, 1, 0,
-            1, 1, 1, 1,
-            -1, -1, 0, 0,
-            1, 1, 1, 1,
-            -1, 1, 0, 1
-        ], dtype='float32')
-        self.register_vao('quad', self.programs['quad'],\
-            ((quad_buffer, '2f4 2f4', 'in_position', 'in_uv'),))
+    def load_texture(self,
+                     imgname: str,
+                     **kwargs) -> mgl.Texture:
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            basedir = sys._MEIPASS
+        else:
+            basedir = os.path.join(os.path.split(__file__)[0], os.pardir)
+        assetdir = os.path.join(basedir, 'assets', imgname)
+        img = pg.transform.flip(pg.image.load(assetdir).convert_alpha(),
+                                False,
+                                True) # Flip vertically because OpenGL
+        tex = self.gl_ctx.texture(img.get_size(), 4, img.get_buffer())
+        tex.swizzle = 'BGRA'
+        for key, value in kwargs.items():
+            setattr(tex, key, value)
+        return tex
     
-        # TODO I also want shaders for bloom effect and alpha masking, possibly other things too
-        self.register_program('extract_bloom', vertex_shader=_quad_vertex_src,
-            fragment_shader=\
-"""
-#version 330
-in vec2 out_uv;
-
-layout (location=0) out vec4 bloomColor;
-
-uniform float threshold;
-uniform sampler2D tex;
-
-void main() {
-    vec4 in_color = texture(tex, out_uv);
-    float lum = in_color.x * .25 + in_color.y * .5 + in_color.z * .25;
-    bloomColor = (lum >= threshold) ? vec4(in_color) : vec4(0);
-}
-""", varyings = ('out_uv'))
-        self.register_vao('ex_bloom_quad', self.programs['extract_bloom'],\
-            ((quad_buffer, '2f4 2f4', 'in_position', 'in_uv'),))
+    def _match_viewport(self) -> None:
+        self.gl_ctx.viewport = (0, 0, *self.gl_ctx.fbo.size)
+    
+    def render_sprite(self,
+                      sprite: sprite.Sprite,
+                      pixel_pos: Offset,
+                      size_pixels: Offset,
+                      progname:str='quad',
+                      angle:float=0,
+                      positioning:Tuple[str, str]=('left', 'top'),
+                      color:Color=(1, 1, 1, 1),
+                      **kwargs) -> None:
+        self._match_viewport()
+        program = self.programs[progname]
+        vao = self.vaos[progname]
+        sprite.texture.use(0)
+        program['tex'] = 0
+        screen_size = self.gl_ctx.fbo.size
         
-        self.register_program('blur', vertex_shader=_quad_vertex_src,
-            fragment_shader=\
-"""
-#version 330
-in vec2 out_uv;
-
-layout (location=0) out vec4 blurColor;
-
-uniform uint blurSize;
-uniform bool horizontal;
-uniform sampler2D tex;
-
-const float irt2pi = .39894228;
-
-void main() {
-    vec2 pixelSize = 1 / textureSize(tex, 0);
-    float sigma = float(blurSize) / 6.0f;
-    float den = 1 / (2 * sigma * sigma);
-    vec4 accum = texture(tex, out_uv) * irt2pi;
-    for (uint i = 1U; i <= blurSize; i++) {
-        float factor = irt2pi * exp(-int(i * i) * den);
-        if (horizontal) {
-            accum += texture(tex, out_uv + vec2(pixelSize.x * i, 0)) * factor;
-            accum += texture(tex, out_uv - vec2(pixelSize.x * i, 0)) * factor;
-        }
-        else {
-            accum += texture(tex, out_uv + vec2(0, pixelSize.y * i)) * factor;
-            accum += texture(tex, out_uv - vec2(0, pixelSize.y * i)) * factor;
-        }
-    }
-    blurColor = accum;
-}
-""", varyings=('out_uv'))
-        self.register_vao('blur', self.programs['blur'],\
-            ((quad_buffer, '2f4 2f4', 'in_position', 'in_uv'),))
+        if positioning[0].lower() == 'left':
+            center_x_frac = pixel_pos[0] + size_pixels[0] / 2
+        elif positioning[0].lower() == 'center':
+            center_x_frac = pixel_pos[0]
+        elif positioning[0].lower() == 'right':
+            center_x_frac = pixel_pos[0] - size_pixels[0] / 2
+        else:
+            raise AttributeError(
+                f'Unknown positioning specifier {positioning[0]}')
+        if positioning[1].lower() == 'top':
+            center_y_frac =\
+                screen_size[1] - 1 - pixel_pos[1] - size_pixels[1] / 2
+        elif positioning[1].lower() == 'center':
+            center_y_frac = (screen_size[1] - 1 - pixel_pos[1])
+        elif positioning[1].lower() == 'bottom':
+            center_y_frac =\
+                screen_size[1] - 1 - pixel_pos[1] + size_pixels[1] / 2
+        else:
+            raise AttributeError(
+                f'Unknown positioning specifier {positioning[1]}')
+        center_x_frac /= screen_size[0]
+        center_y_frac /= screen_size[1]
         
-        self.register_fbo('pingpong0', self.gl_ctx.screen.size, 1)
-        self.register_fbo('pingpong1', self.gl_ctx.screen.size, 1)
+        scale_x = size_pixels[0] / screen_size[0]
+        scale_y = size_pixels[0] / screen_size[1]
+        
+        program['center_pos'] = center_x_frac * 2 - 1, center_y_frac * 2 - 1
+        program['pre_scale'] = scale_x, scale_y
+        program['post_scale'] = 1, size_pixels[1] / size_pixels[0]
+        
+        tex_size = sprite.texture.size
+        program['uv_bottom_left'] = sprite.topleft_texels[0] / tex_size[0],\
+            (tex_size[1] - 1 -
+             sprite.topleft_texels[1]
+             - sprite.size_texels[1]) / tex_size[1]
+        program['uv_size'] = (sprite.size_texels[0] / tex_size[0],
+                              sprite.size_texels[1] / tex_size[1])
+        program['angle'] = angle
+        
+        if 'colorMask' in program:
+            program['colorMask'] = color
+        
+        for key, value in kwargs.items():
+            program[key] = value
+        vao.render()
+    
+    def fbo_to_fbo(self,
+                   dst: Optional[mgl.Framebuffer],
+                   src: mgl.Framebuffer,
+                   progname='quad',
+                   **kwargs) -> None:
+        if dst is None:
+            dst = self.screen
+        if dst is src:
+            return
+        self._match_viewport()
+        program = self.programs[progname]
+        vao = self.vaos[progname]
+        dst.use()
+        src.color_attachments[0].use(0)
+        program['tex'] = 0
+        program['center_pos'] = 0, 0
+        program['pre_scale'] = 1, 1
+        program['post_scale'] = 1, 1
+        program['angle'] = 0
+        program['uv_bottom_left'] = 0, 0
+        program['uv_size'] = 1, 1
+        for key, value in kwargs.items():
+            program[key] = value
+        vao.render()
+    
+    def apply_bloom(self, size: int, passes: int, threshold:float=0.9)->None:
+        current = self.gl_ctx.fbo
+        if current == self.screen:
+            raise AttributeError('Cannot bloom directly from screen')
+        self.fbos['pingpong1'].clear(0, 0, 0, 0)
+        self.fbo_to_fbo(self.fbos['pingpong1'],
+                        current,
+                        'extract_bloom',
+                        threshold=threshold)
+        
+        self.fbos['pingpong0'].clear(0, 0, 0, 0)
+        self.fbo_to_fbo(self.fbos['pingpong0'],
+                        self.fbos['pingpong1'],
+                        'blur',
+                        horizontal=0,
+                        blurSize=size)
+        self.fbos['pingpong1'].clear(0, 0, 0, 0)
+        self.fbo_to_fbo(self.fbos['pingpong1'],
+                        self.fbos['pingpong0'],
+                        'blur', horizontal=1,
+                        blurSize=size)
+        
+        for i in range(1, passes):
+            self.fbos['pingpong0'].clear(0, 0, 0, 0)
+            self.fbo_to_fbo(self.fbos['pingpong0'],
+                            self.fbos['pingpong1'],
+                            'blur',
+                            horizontal=0,
+                            blurSize=size)
+            self.fbos['pingpong1'].clear(0, 0, 0, 0)
+            self.fbo_to_fbo(self.fbos['pingpong1'],
+                            self.fbos['pingpong0'],
+                            'blur', horizontal=1,
+                            blurSize=size)
+        
+        self.fbo_to_fbo(self.fbos['pingpong0'], current)
+        
+        # pingpong0 holds the original image, pingpong1 holds the blur
+        self.fbos['pingpong1'].color_attachments[0].use(1)
+        self.fbo_to_fbo(current, self.fbos['pingpong0'], 'add', addition=1)
+    
+    def _safe_current(self,
+                      dst: Optional[mgl.Framebuffer])\
+                      -> Tuple[mgl.Framebuffer, mgl.Framebuffer]:
+        current = self.gl_ctx.fbo
+        if current == self.screen:
+            raise AttributeError('Cannot apply effects directly from screen')
+        if dst is None:
+            dst = self.screen
+        if dst == current:
+            self.fbos['pingpong0'].clear(0, 0, 0, 0)
+            self.fbo_to_fbo(self.fbos['pingpong0'], current)
+            current = self.fbos['pingpong0']
+        return dst, current
+    
+    def apply_exposure(self,
+                       dst:Optional[mgl.Framebuffer]=None,
+                       exposure:float=1,
+                       gamma:float=2.2) -> None:
+        dst, current = self._safe_current(dst)
+        self.fbo_to_fbo(dst, current, 'gamma', exposure=exposure, gamma=gamma)
+    
+    def apply_vignette(self,
+                       dst:Optional[mgl.Framebuffer]=None,
+                       mask:Optional[mgl.Texture]=None) -> None:
+        if mask is None:
+            self.fbo_to_fbo(dst, self.gl_ctx.fbo)
+            return
+        dst, current = self._safe_current(dst)
+        mask.use(1)
+        self.fbo_to_fbo(dst, current, 'vignette', mask=1)
+    
+    def clear(self,
+              r:float=0,
+              g:float=0,
+              b:float=0,
+              a:float=0,
+              depth:float=1) -> None:
+        self.gl_ctx.clear(r, g, b, a, depth)
+    
+    def get_font(self, name: str, size: Offset) -> text.CharBank:
+        key = name, size
+        if key not in self.charbanks:
+            self.charbanks[key] = text.CharBank.fontCharBank(name,
+                                                             self,
+                                                             size=size)
+        return self.charbanks[key]
+    
+    def create_defaults(self) -> None:
+        
+        shaders.register_shaders(self)
+        
+        self.register_fbo('pingpong0', self.screen_size, 1)
+        self.register_fbo('pingpong1', self.screen_size, 1)
+        self.register_fbo('accum0', self.screen_size, 1)
+        self.register_fbo('accum1', self.screen_size, 1)
+        self.register_fbo('vignette', self.screen_size, 1)

@@ -1,7 +1,7 @@
 import moderngl as mgl
 import pygame as pg
 
-from . import (
+from roguelike import (
     game,
     settings
 )

@@ -3,7 +3,7 @@ from roguelike import event_manager, tween
 rect = tween.AnimatableMixin()
 
 def _animate(state, event):
-    animation = tween.Animation(rect, [tween.Tween('x', 0, 1.5, 2)])
+    animation = tween.Animation([(0, tween.Tween(rect, 'x', 0, 1.5, 2))])
     animation.attach(event)
     state.begin_animation(animation)
     print("Started animation")
