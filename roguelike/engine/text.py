@@ -1,15 +1,19 @@
 from dataclasses import dataclass
 from typing import (
     Dict,
-    Tuple
+    Tuple,
+    TYPE_CHECKING
 )
 
-import moderngl as mgl
+import moderngl as mgl # type: ignore
 import pygame as pg
 
 from . import (
     sprite
 )
+
+if TYPE_CHECKING:
+    from .renderer import Renderer
 
 Offset = Tuple[float, float]
 Color = Tuple[float, float, float, float]
@@ -18,17 +22,17 @@ Color = Tuple[float, float, float, float]
 class CharBank:
     glyphs: Dict[int, sprite.Sprite]
     line_height: float
-    renderer: 'renderer.Renderer'
+    renderer: 'Renderer'
     
     def str_size(self,
                  msg: str,
                  scale:Offset=(1, 1),
                  max_width:float=-1) -> Offset:
-        x, y = 0, 0
-        max_x = 0
+        x, y = 0., 0.
+        max_x = 0.
         for ch in msg:
             if ch == '\n':
-                x = 0
+                x = 0.
                 y += self.line_height * scale[1]
             if ord(ch) not in self.glyphs:
                 continue
@@ -36,7 +40,7 @@ class CharBank:
             size = glyph.size_texels
             width = size[0] * scale[0]
             if max_width > 0 and x + width >= max_width:
-                x = 0
+                x = 0.
                 y += self.line_height * scale[1]
             x += width
             max_x = max(x, max_x)
@@ -45,8 +49,8 @@ class CharBank:
     def scale_to_bound(self, msg: str, bounds: Offset) -> float:
         """Get the scale factor that allows msg to fit inside bounds"""
         if not bounds:
-            return 1
-        size = 0
+            return 1.
+        size = 0.
         at_scale = self.str_size(msg)
         if bounds[0] > 0:
             size = bounds[0] / at_scale[0]
@@ -55,7 +59,7 @@ class CharBank:
             if size == 0 or size_h < size:
                 size = size_h
         if size == 0:
-            return 1
+            return 1.
         return size
     
     def draw_str(self,

@@ -13,12 +13,19 @@ from typing import (
     Callable,
     Dict,
     Generator,
+    List,
+    Optional,
     Protocol,
     Sequence,
-    Tuple
+    Tuple,
+    TYPE_CHECKING
 )
 
 from .awaiting import *
+
+if TYPE_CHECKING:
+    from .gamestate import GameState
+    from .renderer import Renderer
 
 class EventManagerMixin:
     """A mixin for types that can manage events, such as a game state"""
@@ -40,7 +47,7 @@ class EventManagerMixin:
         """Step all active events and remove those that are done"""
         if len(self.active_events) == 0 and len(self.event_queue) != 0:
             self.active_events.append(self.event_queue.popleft())
-        results = []
+        results: List[bool] = []
         while len(results) < len(self.active_events):
             results.append(self.active_events[len(results)].step(state))
         self.active_events[:] = [e for i, e in enumerate(self.active_events)
@@ -60,7 +67,8 @@ class Event(AwaiterMixin, AwaitableMixin):
     generator: Callable[[EventManagerMixin, 'Event'],
                         Generator[bool, None, None]]
     data: Dict[str, Any] = field(default_factory=dict)
-    _generator: Generator[bool, None, None] = field(init=False, default=None)
+    _generator: Optional[Generator[bool, None, None]] =\
+        field(init=False, default=None)
     
     def __post_init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

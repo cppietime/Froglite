@@ -46,7 +46,7 @@ class InputState:
         for state in self.focus.values():
             state[KeyState.UP] = state[KeyState.DOWN] = False
     
-    def process_event(self, event: 'Event') -> None:
+    def process_event(self, event: pg.event.EventType) -> None: # type: ignore
         if event.type == pg.ACTIVEEVENT and 'state' in event.dict:
             if event.gain == 0:
                 self.focus[event.state][KeyState.PRESSED] = False

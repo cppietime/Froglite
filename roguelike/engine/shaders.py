@@ -1,5 +1,10 @@
 import numpy as np
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .renderer import Renderer
+
 """
 Just another helper file to register all the shaders and special VAOs
 """

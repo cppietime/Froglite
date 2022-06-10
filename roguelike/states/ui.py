@@ -20,7 +20,7 @@ from roguelike.engine import (
     tween
 )
 
-Rect = Tuple[float, float, float, float]
+Rect = List[float]
 
 """
 The render method in these classes takes a 2-tuple base_offset which
@@ -28,7 +28,7 @@ represents the offset of the
 parent widget, to add to the rendering
 """
 
-Offset = Tuple[float, float]
+Offset = List[float]
 
 class Widget(Protocol):
     """Protocol class to represent widgets"""
@@ -53,6 +53,10 @@ class Widget(Protocol):
                 key: int) -> None:
         """What happens when a key is pressed while this is selected?"""
         pass
+    
+    def validate(self) -> None:
+        """Make sure selection is valid"""
+        pass
 
 @dataclass
 class Label:
@@ -61,11 +65,11 @@ class Label:
     bg: 'Sprite'
     # (x, y, width, height) format starting at top-left
     bg_rect: Rect
-    bg_color: Rect = (1, 1, 1, 1)
+    bg_color: Rect = field(default_factory=lambda: [1, 1, 1, 1])
     text: str = ""
     text_rect: Optional[Rect] = None
     font: Optional['CharBank'] = None
-    text_color: Rect = (1, 1, 1, 1)
+    text_color: Rect = field(default_factory=lambda: [1, 1, 1, 1])
     
     offset: tween.AnimatableMixin =\
         field(default_factory = tween.AnimatableMixin)
@@ -95,9 +99,12 @@ class Label:
                     self.text_rect[3] + self.offset.h)
             scale = self.font.scale_to_bound(self.text, size)
             scale = scale, scale
-            self.font.draw_str(self.text, pos, self.text_color, scale)
+            self.font.draw_str(self.text, pos, tuple(self.text_color), scale)
             
     def update(self, delta_time: float, state: gamestate.GameState):
+        pass
+    
+    def validate(self):
         pass
 
 @dataclass
@@ -126,6 +133,9 @@ class Button:
             self.command(state)
     
     def update(self, delta_time, state):
+        pass
+    
+    def validate(self):
         pass
 
 @dataclass
@@ -165,7 +175,7 @@ class WidgetHolder:
     horizontal: bool = False
     spacing: float = 0
     buffer_display: int = 1
-    zero_point: int = 0
+    zero_point: float = 0
     scroll_time: float = 0.2
     
     def selectable(self):
@@ -294,12 +304,21 @@ class WidgetHolder:
         # Propagate down if we haven't returned
         if selected is not None:
             selected.keydown(delta_time, state, key)
+    
+    def validate(self):
+        for widget in self.widgets:
+            widget.validate()
+        for i in range(len(self.widgets)):
+            n_sel = (self.selection + i) % len(self.widgets)
+            if self.widgets[n_sel].selectable():
+                self.selection = n_sel
+                break
         
 @dataclass
 class MetaWidget:
     # Bounding rect MUST NOT BE NONE if mask_sprite is used
     widget: Widget
-    bounding_rect: Optional[Rect] = None # Rectangular cutoff
+    bounding_rect: Optional[tween.AnimatableMixin] = None # Rectangular cutoff
     mask_sprite: Optional[sprite.Sprite] = None # Alpha mask sprite
     
     def selectable(self):
@@ -315,8 +334,8 @@ class MetaWidget:
         # Get the base offset accounting for the rect
         x, y = base_offset
         if self.bounding_rect is not None:
-            x += self.bounding_rect[0]
-            y += self.bounding_rect[1]
+            x += self.bounding_rect.x
+            y += self.bounding_rect.y
             # If we need to clear and render on our own, push a new FBO
             old_fbo = renderer.current_fbo()
             new_fbo = renderer.push_fbo()
@@ -324,28 +343,32 @@ class MetaWidget:
         
         self.widget.render(delta_time, renderer, base_offset, selected)
         if self.bounding_rect is not None:
+            size = (self.bounding_rect.w, self.bounding_rect.h)
             if self.mask_sprite is None:
                 base_tex = new_fbo.color_attachments[0]
                 cutoff_sprite = sprite.Sprite(base_tex,
                                               (x, y),
-                                              self.bounding_rect[2:])
+                                              size)
                 renderer.pop_fbo()
                 old_fbo.use()
                 renderer.render_sprite(cutoff_sprite,
                                        (x, y),
-                                       self.bounding_rect[2:])
+                                       size)
             else:
                 renderer.fbos['vignette'].use()
                 renderer.clear()
                 renderer.render_sprite(self.mask_sprite,
                                        (x, y),
-                                       self.bounding_rect[2:])
+                                       size)
                 new_fbo.use()
                 renderer.apply_vignette(old_fbo,
                                         renderer.fbos['vignette']\
                                             .color_attachments[0])
                 renderer.pop_fbo()
                 old_fbo.use()
+    
+    def validate(self):
+        self.widget.validate()
             
 
 class MenuState(gamestate.GameState):
@@ -366,6 +389,8 @@ class MenuState(gamestate.GameState):
         for key, status in self.inputstate.keys.items():
             if status[inputs.KeyState.DOWN]:
                 self.widget.keydown(delta_time, self, key)
+        return True
     
     def on_push(self, manager: gamestate.GameStateManager) -> None:
         super().on_push(manager)
+        self.widget.validate()

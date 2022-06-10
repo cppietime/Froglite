@@ -6,10 +6,11 @@ from typing import (
     Dict,
     Iterable,
     Optional,
+    Sequence,
     Tuple
 )
 
-import moderngl as mgl
+import moderngl as mgl # type: ignore
 import numpy as np
 import pygame as pg
 
@@ -43,7 +44,7 @@ class Renderer:
                          name: str,
                          vertex_shader: str,
                          fragment_shader: str,
-                         varyings:Tuple[str]=()) -> mgl.Program:
+                         varyings:Sequence[str]=()) -> mgl.Program:
         program = self.gl_ctx.program(vertex_shader=vertex_shader,
                                       fragment_shader=fragment_shader,
                                       varyings=varyings)
@@ -53,7 +54,7 @@ class Renderer:
     def register_vao(self,
                      name: str,
                      program: mgl.Program,
-                     buffer_specs: Iterable[Tuple[np.ndarray, str]])\
+                     buffer_specs: Iterable[Tuple[Any, ...]])\
                      -> mgl.VertexArray:
         _buffer_specs = []
         for spec in buffer_specs:
@@ -65,7 +66,7 @@ class Renderer:
         return vao
     
     def register_fbo(self,
-                     name: str,
+                     name: Optional[str],
                      size: Offset,
                      num_tex: int,
                      depth:bool=True,
@@ -191,7 +192,8 @@ class Renderer:
         program['angle'] = angle
         
         if 'colorMask' in program:
-            program['colorMask'] = color
+            m_col = [color[i] * sprite.color[i] for i in range(4)]
+            program['colorMask'] = tuple(m_col)
         
         for key, value in kwargs.items():
             program[key] = value
@@ -302,7 +304,7 @@ class Renderer:
               depth:float=1) -> None:
         self.gl_ctx.clear(r, g, b, a, depth)
     
-    def get_font(self, name: str, size: Offset) -> text.CharBank:
+    def get_font(self, name: str, size: int) -> text.CharBank:
         key = name, size
         if key not in self.charbanks:
             self.charbanks[key] = text.CharBank.fontCharBank(name,

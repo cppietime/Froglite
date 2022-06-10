@@ -8,14 +8,21 @@ from dataclasses import (
     field
 )
 from typing import (
+    cast,
+    Any,
     List,
     Sequence,
-    Tuple
+    Tuple,
+    Union,
+    TYPE_CHECKING
 )
 
 import numpy as np
 
 from .awaiting import *
+
+if TYPE_CHECKING:
+    pass
 
 class AnimatableMixin:
     """Represents anything that has 2D position and scale and 1D rotation that
@@ -32,32 +39,46 @@ class AnimatableMixin:
 class Tween:
     """A single tween action that acts on a single property of a single
     animatable"""
-    target: AnimatableMixin
-    prop: str
+    target: Union[AnimatableMixin, List]
+    prop: Union[int, str]
     start: float
-    end: float
+    end: Any
     duration: float
     elapsed: float = 0
+    is_list: bool = False
+    step: bool = False
+    
+    def __post_init__(self):
+        assert self.step or type(self.end) in (int, float)
     
     def is_active(self) -> bool:
         """Returns False when this tween is over"""
         return self.elapsed < self.duration
     
-    def update(self, delta_time: float) -> None:
+    def set_to(self, value: float) -> None:
+        if self.is_list:
+            cast(list, self.target)[cast(int, self.prop)] = value
+        else:
+            setattr(self.target, cast(str, self.prop), value)
+    
+    def update(self, delta_time: float) -> bool:
         """Applies an animation
         delta_time: time in seconds to apply this animation for
+        returns True iff the animation is ongoing
         """
-        if self.duration == 0 and self.target and self.prop:
-            # Check specifically for 0 duration case
-            setattr(self.target, self.prop, self.end)
-            return False
-        if not self.is_active():
-            return False
         self.elapsed += delta_time
-        weight = min(1.0, max(0.0, self.elapsed / self.duration))
-        value = self.start + (self.end - self.start) * weight
-        if self.target and self.prop:
-            setattr(self.target, self.prop, value)
+        # if (self.duration == 0 and self.target and self.prop)\
+                # or self.elapsed >= self.duration:
+        if self.duration == 0 or self.elapsed >= self.duration:
+            if self.target and self.prop:
+                # Check specifically for 0 duration case
+                self.set_to(self.end)
+            return False
+        if not self.step:
+            weight = min(1.0, max(0.0, self.elapsed / self.duration))
+            value = self.start + (self.end - self.start) * weight
+            if self.target and self.prop:
+                self.set_to(value)
         return True
 
 @dataclass
@@ -68,7 +89,6 @@ class Animation(AwaitableMixin):
     Tweens need not be purely sequential. If one has a delta time less than
     the previous' duration, they will coincide
     """
-    # target: AnimatableMixin
     tweens: Sequence[Tuple[float, Tween]]
     index: int = 0
     active_tweens: List[Tween] = field(default_factory=list)
@@ -78,7 +98,7 @@ class Animation(AwaitableMixin):
     def __post_init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     
-    def update(self, delta_time: float) -> None:
+    def update(self, delta_time: float) -> bool:
         """Animates any active tweens and returns whether the animation is
         still going"""
         self.active_tweens[:] = [tween for tween in self.active_tweens if
