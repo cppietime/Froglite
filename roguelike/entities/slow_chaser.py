@@ -6,6 +6,7 @@ from typing import (
 )
 
 from roguelike.engine import (
+    event_manager,
     sprite,
     tween
 )
@@ -28,6 +29,7 @@ class SlowChaserEntity(entity.EnemyEntity):
                          action_cost=2,
                          max_hp=16,
                          **kwargs)
+        self.anim.speed = 0
     
     def attack(self,
                state: 'DungeonMapState',
@@ -39,79 +41,25 @@ class SlowChaserEntity(entity.EnemyEntity):
         dprop = 'x' if tpos[0] != self.dungeon_pos[0] else 'y'
         dprop_i = 1 if dprop == 'y' else 0
         current_self = getattr(self.rect, dprop)
-        current_other = target.dungeon_pos[dprop_i] * state.tile_size
-        anim = tween.Animation([
-            (0, tween.Tween(self.rect,
-                            dprop,
-                            current_self,
-                            current_other,
-                            0.1)),
-            (0.1, tween.Tween(self.rect,
-                              dprop,
-                              current_other,
-                              current_self,
-                              0.15)),
-            (0.15, tween.Tween(my_anim,
-                               'state',
-                               0,
-                               sprite.AnimState.IDLE,
-                               0,
-                               step=True))
-        ])
-        anim.attach(state)
-        state.begin_animation(anim)
+        other_x = target.dungeon_pos[0] * state.tile_size
+        other_y = target.dungeon_pos[1] * state.tile_size
+        def _script(_state, event):
+            while _state.locked():
+                yield True
+            self.animate_stepping_to(state,
+                                     (other_x, other_y),
+                                     0.25,
+                                     sprite.AnimState.IDLE,
+                                     0,
+                                     interpolation=tween.bounce(1))
+            target.get_hit(_state, self, 0)
+            yield not _state.locked()
+        state.queue_event(event_manager.Event(_script))
     
     def take_action(self,
                       state: 'GameState',
                       player_pos: Tuple[int, int]) -> None:
-        state = cast('DungeonMapState', state)
-        my_anim = cast(sprite.AnimationState, self.anim)
-        path = state.dungeon_map.a_star(tuple(self.dungeon_pos), player_pos)
-        if path is None:
-            # Player cannot be reached, just sit still
-            return
-        if len(path) < 3:
-            # Player is within one square
-            self.attack(state, state.dungeon_map.player)
-            return
-        next_step = path[1]
-        # Animations and motion
-        my_anim.state = sprite.AnimState.WALK
-        prop = None
-        if next_step[0] < self.dungeon_pos[0]:
-            my_anim.direction = sprite.AnimDir.LEFT
-            prop = 'x'
-        elif next_step[0] > self.dungeon_pos[0]:
-            my_anim.direction = sprite.AnimDir.RIGHT
-            prop = 'x'
-        elif next_step[1] < self.dungeon_pos[1]:
-            my_anim.direction = sprite.AnimDir.UP
-            prop = 'y'
-        elif next_step[1] > self.dungeon_pos[1]:
-            my_anim.direction = sprite.AnimDir.DOWN
-            prop = 'y'
-        if prop is not None\
-                and state.dungeon_map.move_entity(tuple(self.dungeon_pos),
-                                                  next_step):
-            anim = tween.Animation([
-                (0, tween.Tween(self.rect,
-                                prop,
-                                getattr(self.rect, prop),
-                                self.dungeon_pos[0 if prop == 'x' else 1]\
-                                    * state.tile_size,
-                                0.25)),
-                (0.25, tween.Tween(my_anim,
-                                'state',
-                                0,
-                                sprite.AnimState.IDLE,
-                                0,
-                                step=True))
-            ])
-            anim.attach(state)
-            state.begin_animation(anim)
-        # if state.dungeon_map.move_entity(tuple(self.dungeon_pos), next_step):
-            # self.rect.x = self.dungeon_pos[0] * state.tile_size
-            # self.rect.y = self.dungeon_pos[1] * state.tile_size
+        super().chase_player(state, player_pos, -1)
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:
@@ -124,7 +72,7 @@ class SlowChaserEntity(entity.EnemyEntity):
             spr.angle = -i * math.pi / 2
         cls.class_anim = sprite.Animation({
             sprite.AnimState.DEFAULT: {
-                sprite.AnimDir.DEFAULT: seq[:1]
+                sprite.AnimDir.DEFAULT: seq
             },
             sprite.AnimState.WALK: {
                 sprite.AnimDir.DEFAULT: seq

@@ -28,6 +28,7 @@ entity.Entity.base_size = tile_size
 dungeon.DungeonMapState.init_sprites(rend)
 player.PlayerEntity.init_sprites(rend)
 slow_chaser.SlowChaserEntity.init_sprites(rend)
+entity.EnemyEntity.hp_font = dungeon.DungeonMapState.font
 
 tile_tex = rend.load_texture('tile.png', filter=(mgl.NEAREST, mgl.NEAREST))
 tile_spr = sprite.Sprite(tile_tex, (0, 0), tile_tex.size, color=(1, 1, .8, 1))
@@ -43,11 +44,11 @@ player_ent = player.PlayerEntity(dungeon_pos=[20, 20])
 dungeon_map.player = player_ent
 
 chaser = slow_chaser.SlowChaserEntity(dungeon_pos=[17, 17])
-dungeon_map.entities[(17, 17)] = chaser
+chaser2 = slow_chaser.SlowChaserEntity(dungeon_pos=[17, 20])
+dungeon_map.place_entity(chaser)
+dungeon_map.place_entity(chaser2)
 
 state = dungeon.DungeonMapState(dungeon=dungeon_map, tile_size=tile_size)
-# state.camera.x = 32 * 50
-# state.camera.y = 32 * 50
 manager.push_state(state)
 
 clock = pg.time.Clock()
@@ -73,7 +74,7 @@ while running:
         running = False
     
     pg.display.flip()
-    delta_time = clock.tick() / 1000
+    delta_time = clock.tick(60) / 1000
     
     f_no += 1
     if f_no == 100:

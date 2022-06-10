@@ -7,9 +7,11 @@ from dataclasses import (
     dataclass,
     field
 )
+import math
 from typing import (
     cast,
     Any,
+    Callable,
     List,
     Sequence,
     Tuple,
@@ -35,6 +37,23 @@ class AnimatableMixin:
                  rotation:float=0):
         self.x, self.y, self.w, self.h, self.rotation = x, y, w, h, rotation
 
+def linear(x: float) -> float:
+    return x
+
+def smoothstep(x: float) -> float:
+    x2 = x * x
+    return 3 * x2 - 2 * x2 * x
+
+def shake(cycles: float) -> Callable[[float], float]:
+    def _fn(x: float) -> float:
+        return math.sin(x * math.pi * 2 * cycles)
+    return _fn
+
+def bounce(bounces: float, power: float = 1) -> Callable[[float], float]:
+    def _fn(x: float) -> float:
+        return 1 - abs(math.cos(x * math.pi * bounces)) ** power
+    return _fn
+
 @dataclass
 class Tween:
     """A single tween action that acts on a single property of a single
@@ -47,6 +66,7 @@ class Tween:
     elapsed: float = 0
     is_list: bool = False
     step: bool = False
+    interpolation: Callable[[float], float] = linear
     
     def __post_init__(self):
         assert self.step or type(self.end) in (int, float)
@@ -69,17 +89,26 @@ class Tween:
         self.elapsed += delta_time
         # if (self.duration == 0 and self.target and self.prop)\
                 # or self.elapsed >= self.duration:
-        if self.duration == 0 or self.elapsed >= self.duration:
-            if self.target and self.prop:
-                # Check specifically for 0 duration case
+        # if self.duration == 0 or self.elapsed >= self.duration:
+            # if self.target and self.prop:
+                # # Check specifically for 0 duration case
+                # self.set_to(self.end)
+            # return False
+        # if not self.step:
+        if self.step:
+            if (self.elapsed >= self.duration or self.duration == 0)\
+                    and self.target and self.prop:
                 self.set_to(self.end)
-            return False
-        if not self.step:
-            weight = min(1.0, max(0.0, self.elapsed / self.duration))
+        else:
+            if self.duration == 0:
+                weight = 1.
+            else:
+                weight = min(1.0, max(0.0, self.elapsed / self.duration))
+            weight = self.interpolation(weight)
             value = self.start + (self.end - self.start) * weight
-            if self.target and self.prop:
+            if self.target is not None and self.prop is not None:
                 self.set_to(value)
-        return True
+        return self.elapsed < self.duration #True
 
 @dataclass
 class Animation(AwaitableMixin):

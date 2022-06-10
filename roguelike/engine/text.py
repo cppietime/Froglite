@@ -89,6 +89,14 @@ class CharBank:
                                         color=color)
             x += width
     
+    def draw_str_in(self,
+                 msg: str,
+                 pos: Offset,
+                 bounds: Offset,
+                 color:Color=(1, 1, 1, 1)) -> None:
+        scale = self.scale_to_bound(msg, bounds)
+        self.draw_str(msg, pos, color, (scale, scale))
+    
     @staticmethod
     def fontCharBank(typeface: str,
                      renderer: 'Renderer',

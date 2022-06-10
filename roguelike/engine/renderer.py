@@ -308,8 +308,9 @@ class Renderer:
         key = name, size
         if key not in self.charbanks:
             self.charbanks[key] = text.CharBank.fontCharBank(name,
-                                                             self,
-                                                             size=size)
+                                                            self,
+                                                            antialiasing=False,
+                                                            size=size)
         return self.charbanks[key]
     
     def create_defaults(self) -> None:

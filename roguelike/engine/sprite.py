@@ -55,6 +55,7 @@ class AnimationState:
     animation: Optional[Animation] = None
     state: AnimState = AnimState.DEFAULT
     direction: AnimDir = AnimDir.DEFAULT
+    speed: float = 1
     time: float = 0
     
     def spr_list(self) -> Sequence[Sprite]:
@@ -92,5 +93,6 @@ class AnimationState:
         if self.animation is None:
             return
         spr_list = self.spr_list()
-        self.time = (self.time + delta_time * self.animation.speed)\
+        self.time = (self.time
+            + delta_time * self.animation.speed * self.speed)\
             % len(spr_list)

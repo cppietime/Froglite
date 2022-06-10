@@ -20,10 +20,12 @@ from typing import (
 
 import pygame as pg
 
+from roguelike import settings
 from roguelike.engine import (
     gamestate,
     inputs,
     sprite,
+    text,
     tween
 )
 from roguelike.entities import entity
@@ -46,6 +48,33 @@ class DungeonTile:
     special_render: bool = False
     offset_type: RandomAnimType = RandomAnimType.GLOBAL
     offset_power: float = 0
+
+@dataclass
+class DungeonParticle:
+    rect: tween.AnimatableMixin
+    motion: tween.Animation
+    animstate: Optional[sprite.AnimationState] = None
+    msg: Optional[str] = None
+    text_color: Tuple[float, float, float, float] = (0, 0, 0, 0)
+    font: Optional[text.CharBank] = None
+    
+    def render_particle(self,
+                        delta_time: float,
+                        renderer: 'Renderer',
+                        offset: Tuple[float, float]) -> bool:
+        active = self.motion.update(delta_time)
+        pos = (self.rect.x + offset[0], self.rect.y + offset[1])
+        if self.animstate is not None:
+            self.animstate.render(renderer,
+                                  pos,
+                                  (self.rect.w, self.rect.h))
+        if self.msg:
+            assert self.font is not None
+            self.font.draw_str_in(self.msg,
+                                  pos,
+                                  (self.rect.w, self.rect.h),
+                                  self.text_color)
+        return active
 
 class DungeonMap:
     def __init__(self,
@@ -141,28 +170,45 @@ class DungeonMap:
         self.entities[to] = ent
         ent.dungeon_pos = list(to)
         return True
+    
+    def place_entity(self, ent: entity.Entity) -> bool:
+        check_pos = cast(Tuple[int, int], tuple(ent.dungeon_pos))
+        if not self.is_free(check_pos):
+            return False
+        self.entities[check_pos] = ent
+        return True
+    
+    def remove_entity(self, ent: entity.Entity) -> None:
+        check_pos = cast(Tuple[int, int], tuple(ent.dungeon_pos))
+        if self.entities.get(check_pos, None) is ent:
+            self.entities.pop(check_pos)
 
 class DungeonMapState(gamestate.GameState):
     """Gamestate for traversing a dungeon"""
     vignette_sprite: ClassVar[sprite.Sprite]
+    font: ClassVar[text.CharBank]
+    base_text_scale: ClassVar[float]
 
     def __init__(self, *args, **kwargs):
         self.dungeon_map = kwargs.pop('dungeon')
         self.tile_size = kwargs.pop('tile_size')
         super().__init__(*args, **kwargs)
         self.camera = tween.AnimatableMixin()
+        self.particles: List[DungeonParticle] = []
     
     def render_gamestate(self,
                          delta_time: float,
                          renderer: 'Renderer') -> None:
         super().render_gamestate(delta_time, renderer)
+        player = self.dungeon_map.player
         # Get important camera info
+        
         num_tiles_x = (renderer.screen_size[0] + self.tile_size - 1)\
             // self.tile_size + 2
         num_tiles_y = (renderer.screen_size[1] + self.tile_size - 1)\
             // self.tile_size + 2
-        c_x = self.camera.x + self.dungeon_map.player.rect.x
-        c_y = self.camera.y + self.dungeon_map.player.rect.y
+        c_x = self.camera.x + player.rect.x + player.rect.w // 2
+        c_y = self.camera.y + player.rect.y + player.rect.h // 2
         adj_x = c_x - renderer.screen_size[0] // 2
         adj_y = c_y - renderer.screen_size[1] // 2
         start_tile_x = math.floor(
@@ -172,7 +218,6 @@ class DungeonMapState(gamestate.GameState):
             (c_y - renderer.screen_size[1] // 2)\
             // self.tile_size - 1)
         
-        player = self.dungeon_map.player
         player_scr_x = player.rect.x + player.rect.w // 2 - adj_x
         player_scr_y = player.rect.y + player.rect.h // 2 - adj_y
         
@@ -216,7 +261,7 @@ class DungeonMapState(gamestate.GameState):
         # Draw vignette sprite
         renderer.fbos['accum0'].use()
         renderer.clear()
-        renderer.render_sprite(DungeonMapState.vignette_sprite,
+        renderer.render_sprite(self.vignette_sprite,
                                (player_scr_x, player_scr_y),
                                (renderer.screen_size[1],
                                 renderer.screen_size[1]),
@@ -241,9 +286,16 @@ class DungeonMapState(gamestate.GameState):
                     and (ent.rect.y < renderer.screen_size[1]
                     or ent.rect.y + ent.rect.h >= 0):
                 ent.render_entity(delta_time, renderer, (-adj_x, -adj_y))
+        # Do post effects after
+        for pos, ent in self.dungeon_map.entities.items():
+            if (ent.rect.x < renderer.screen_size[0]
+                    or ent.rect.x + ent.rect.w >= 0)\
+                    and (ent.rect.y < renderer.screen_size[1]
+                    or ent.rect.y + ent.rect.h >= 0):
+                ent.render_entity_post(delta_time, renderer, (-adj_x, -adj_y))
         renderer.fbos['accum0'].use()
         renderer.clear()
-        renderer.render_sprite(DungeonMapState.vignette_sprite,
+        renderer.render_sprite(self.vignette_sprite,
                                (player_scr_x, player_scr_y),
                                (renderer.screen_size[1],
                                 renderer.screen_size[1]),
@@ -257,7 +309,19 @@ class DungeonMapState(gamestate.GameState):
         # Render player
         player.render_entity(delta_time,
                              renderer,
-                             (-adj_x, -adj_y))
+                             (-adj_x + player.shaky_cam[0],
+                              -adj_y + player.shaky_cam[1]))
+        
+        # Render particles
+        self.particles[:] = [p for p in self.particles if
+            p.render_particle(delta_time, renderer, (-adj_x, -adj_y))]
+        
+        # Render UI
+        hp_str = f'HP:{player.hp:4}/{player.max_hp:4}'
+        self.font.draw_str(hp_str,
+                                      (self.tile_size // 4,) * 2,
+                                      (0, 1, 0, 1),
+                                      (self.base_text_scale,) * 2)
     
     def update_gamestate(self, delta_time: float) -> bool:
         super().update_gamestate(delta_time)
@@ -267,6 +331,8 @@ class DungeonMapState(gamestate.GameState):
         player_pos = self.dungeon_map.player.dungeon_pos
         for entity in self.dungeon_map.entities.values():
             entity.update_entity(delta_time, self, player_pos)
+            
+        # Update player
         self.dungeon_map.player.update_entity(delta_time, self, player_pos)
         return True
     
@@ -279,19 +345,35 @@ class DungeonMapState(gamestate.GameState):
         entities = tuple(self.dungeon_map.entities.values())
         for ent in entities:
             if ent.actionable:
-                sees_player = ent.detection_radius < 0
+                actor = cast(entity.ActingEntity, ent)
+                sees_player = actor.detection_radius < 0
                 if not sees_player:
                     sees_player =\
-                        self.dungeon_map._diag_dist(ent.dungeon_pos,
+                        self.dungeon_map._diag_dist(actor.dungeon_pos,
                                                          player_pos)\
-                             <= ent.detection_radius
+                             <= actor.detection_radius
                 if sees_player:
-                    actor = cast(entity.ActingEntity, ent)
-                    # print(f'Updating {actor}')
                     actor.give_energy(1.)
                     actor.expend_energy(self, player_pos)
+    
+    def spawn_particle(self,
+                       rect: tween.AnimatableMixin,
+                       motion: tween.Animation,
+                       msg: Optional[str] = None,
+                       text_color: Tuple[float, float, float, float]=\
+                           (0, 0, 0, 0),
+                       animation: Optional[sprite.Animation] = None) -> None:
+        animstate = None if animation is None\
+            else sprite.AnimationState(animation)
+        particle = DungeonParticle(
+            rect, motion, animstate, msg, text_color, self.font)
+        self.particles.append(particle)
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:
         tex = renderer.load_texture('vignette.png')
         cls.vignette_sprite = sprite.Sprite(tex, (0, 0), tex.size)
+        cls.font = renderer.get_font('Consolas', 64)
+        cls.base_text_scale = cls.font.scale_to_bound(
+            "O", (settings.BASE_TEXT_SIZE,) * 2)
+        print(cls.base_text_scale)
