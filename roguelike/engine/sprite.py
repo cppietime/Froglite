@@ -3,6 +3,7 @@ from enum import Enum
 import math
 from typing import (
     Dict,
+    List,
     Optional,
     Sequence,
     Tuple,
@@ -36,11 +37,18 @@ class Sprite:
     topleft_texels: Tuple[int, int]
     size_texels: Tuple[int, int]
     color: Tuple[float, float, float, float] = (1, 1, 1, 1)
+    angle: float = 0 # Rads
 
 @dataclass
 class Animation:
     sprites: Dict[AnimState, Dict[AnimDir, Sequence[Sprite]]]
     speed: float
+    
+    @staticmethod
+    def from_atlas(atlas: mgl.texture.Texture,
+                   size: Tuple[int, int],
+                   offsets: Sequence[Tuple[int, int]]) -> List[Sprite]:
+        return list(map(lambda offset: Sprite(atlas, offset, size), offsets))
     
 @dataclass
 class AnimationState:

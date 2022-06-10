@@ -189,7 +189,7 @@ class Renderer:
              - sprite.size_texels[1]) / tex_size[1]
         program['uv_size'] = (sprite.size_texels[0] / tex_size[0],
                               sprite.size_texels[1] / tex_size[1])
-        program['angle'] = angle
+        program['angle'] = angle + sprite.angle
         
         if 'colorMask' in program:
             m_col = [color[i] * sprite.color[i] for i in range(4)]

@@ -39,7 +39,7 @@ class AnimatableMixin:
 class Tween:
     """A single tween action that acts on a single property of a single
     animatable"""
-    target: Union[AnimatableMixin, List]
+    target: Any
     prop: Union[int, str]
     start: float
     end: Any
