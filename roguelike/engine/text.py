@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import (
     Dict,
+    List,
     Optional,
     Tuple,
     TYPE_CHECKING
@@ -30,6 +31,16 @@ class AlignmentV(IntEnum):
     CENTER = 1
     BOTTOM = 2
 
+LEFT_TOP        = (AlignmentH.LEFT  , AlignmentV.TOP    )
+LEFT_CENTER     = (AlignmentH.LEFT  , AlignmentV.CENTER )
+LEFT_BOTTOM     = (AlignmentH.LEFT  , AlignmentV.BOTTOM )
+CENTER_TOP      = (AlignmentH.CENTER, AlignmentV.TOP    )
+CENTER_CENTER   = (AlignmentH.CENTER, AlignmentV.CENTER )
+CENTER_BOTTOM   = (AlignmentH.CENTER, AlignmentV.BOTTOM )
+RIGHT_TOP       = (AlignmentH.RIGHT , AlignmentV.TOP    )
+RIGHT_CENTER    = (AlignmentH.RIGHT , AlignmentV.CENTER )
+RIGHT_BOTTOM    = (AlignmentH.RIGHT , AlignmentV.BOTTOM )
+
 @dataclass
 class CharBank:
     glyphs: Dict[int, sprite.Sprite]
@@ -45,7 +56,7 @@ class CharBank:
         word_mkr_x = 0.
         for ch in msg:
             if ch == '\n':
-                x = word_mkr_x
+                x = 0#word_mkr_x
                 y += self.line_height * scale[1]
                 word_mkr_x = 0.
                 continue
@@ -55,7 +66,7 @@ class CharBank:
             size = glyph.size_texels
             width = size[0] * scale[0]
             if max_width > 0 and x + width >= max_width:
-                x = 0.
+                x = word_mkr_x
                 y += self.line_height * scale[1]
             if ch == ' ':
                 word_mkr_x = 0
@@ -64,6 +75,43 @@ class CharBank:
             x += width
             max_x = max(x, max_x)
         return max_x, y + self.line_height * scale[1]
+    
+    def split_str(self,
+                 msg: str,
+                 scale:Offset=(1, 1),
+                 max_width:float=-1) -> str:
+        accum: List[str] = []
+        x = 0.
+        word_mkr_x = 0.
+        word_mkr = 0 # index of first character on current word
+        line_mkr = 0 # index of first character on current lin
+        for i, ch in enumerate(msg):
+            if ch == '\n':
+                x = 0#word_mkr_x
+                accum.append(msg[line_mkr:i])
+                line_mkr = word_mkr = i + 1
+                word_mkr_x = 0.
+                continue
+            if ord(ch) not in self.glyphs:
+                continue
+            glyph = self.glyphs[ord(ch)]
+            size = glyph.size_texels
+            width = size[0] * scale[0]
+            if max_width > 0 and x + width >= max_width\
+                    and word_mkr > line_mkr:
+                x = word_mkr_x
+                accum.append(msg[line_mkr:word_mkr])
+                line_mkr = word_mkr
+            if ch == ' ':
+                word_mkr_x = 0
+                word_mkr = i + 1
+            else:
+                word_mkr_x += width
+                # word_mkr += 1
+            x += width
+        accum.append(msg[line_mkr:])
+        return '\n'.join(accum)
+        
     
     def scale_to_bound(self, msg: str, bounds: Offset) -> float:
         """Get the scale factor that allows msg to fit inside bounds"""

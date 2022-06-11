@@ -91,6 +91,8 @@ class Renderer:
         return fbo
     
     def current_fbo(self) -> mgl.Framebuffer:
+        if isinstance(self.gl_ctx.fbo, mgl.mgl.InvalidObject):
+            return self.screen
         return self.gl_ctx.fbo
     
     def push_fbo(self) -> mgl.Framebuffer:
@@ -220,6 +222,8 @@ class Renderer:
         program['angle'] = 0
         program['uv_bottom_left'] = 0, 0
         program['uv_size'] = 1, 1
+        if 'colorMask' in program and 'colorMask' not in kwargs:
+            program['colorMask'] = 1, 1, 1, 1
         for key, value in kwargs.items():
             program[key] = value
         vao.render()
@@ -302,7 +306,7 @@ class Renderer:
               b:float=0,
               a:float=0,
               depth:float=1) -> None:
-        self.gl_ctx.clear(r, g, b, a, depth)
+        self.current_fbo().clear(r, g, b, a, depth)
     
     def get_font(self, name: str, size: int) -> text.CharBank:
         key = name, size

@@ -73,7 +73,8 @@ class DungeonParticle:
             self.font.draw_str_in(self.msg,
                                   pos,
                                   (self.rect.w, self.rect.h),
-                                  self.text_color)
+                                  self.text_color,
+                                  alignment=text.CENTER_CENTER)
         return active
 
 class DungeonMap:
@@ -272,10 +273,15 @@ class DungeonMapState(gamestate.GameState):
                                              (self.tile_size, self.tile_size),
                                              0,
                                              dt)
+        # Experimenal, bloom?
+        # renderer.apply_bloom(5, 1, .7)
+        # Nah
+        
         # Render dark FBO
         renderer.fbo_to_fbo(oldest_fbo,
                             stack_fbo,
                             colorMask = self.dungeon_map.vignette_color)
+        
         # Draw vignette sprite
         renderer.fbos['accum0'].use()
         renderer.clear()
@@ -311,6 +317,8 @@ class DungeonMapState(gamestate.GameState):
                     and (ent.rect.y < renderer.screen_size[1]
                     or ent.rect.y + ent.rect.h >= 0):
                 ent.render_entity_post(delta_time, renderer, (-adj_x, -adj_y))
+
+        # Vignette on visibility of mobs
         renderer.fbos['accum0'].use()
         renderer.clear()
         renderer.render_sprite(self.vignette_sprite,

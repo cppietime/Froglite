@@ -1,3 +1,5 @@
+import dataclasses
+
 import moderngl as mgl # type: ignore
 import pygame as pg
 
@@ -20,6 +22,15 @@ rend = renderer.Renderer(gl_ctx)
 inputstate = inputs.InputState()
 manager = gamestate.GameStateManager(inputstate=inputstate)
 
+tex = rend.load_texture('button_bg.png', filter=(mgl.NEAREST, mgl.NEAREST))
+spr = sprite.Sprite(tex, (0, 0), tex.size)
+print(dir(inventory_state))
+inventory_state.InventoryBaseScreen.active_button_bg = spr
+inventory_state.InventoryBaseScreen.inactive_button_bg = dataclasses.replace(spr)
+inventory_state.InventoryBaseScreen.inactive_button_bg.color = (.5, .5, .5, .9)
+inventory_state.InventoryBaseScreen.set_font(rend.get_font('Consolas', 64))
+inventory_state.InventoryBaseScreen.init_globs()
+
 inventory_state.InventoryBaseScreen.set_font(rend.get_font('Consolas', 64))
 inventory_state.InventoryBaseScreen.init_globs()
 tex = rend.load_texture('test_sprite.png')
@@ -27,17 +38,18 @@ spr = sprite.Sprite(tex, (0, 0), tex.size)
 
 inventory = item.Inventory()
 state = inventory_state.InventoryBaseScreen(inventory=inventory)
-state.obscures = False
+# state.obscures = False
 state.widget.reset_scr = [.5, .5, .5, 1]
+# manager.push_state(state)
 manager.push_state(state)
-manager.push_state(state)
+# state.obscured = False
 
 def do_thing(game_state, ui_state, owner):
     ui_state.display_message("Cuck")
 
 key_item = item.ConsumableItem(name='Key!', icon=spr, description="A key", on_use=do_thing)
-dumb_item = item.ConsumableItem(name='dUmB', icon=spr, description="Dumbass\n mf key", on_use=do_thing)
-knife = item.WeaponItem(name="Knife", icon=None, description="A fukkin knice", damage_mul=1)
+dumb_item = item.ConsumableItem(name='dUmB stupid useless', icon=spr, description="Dumbass\n mf key", on_use=do_thing)
+knife = item.WeaponItem(name="Knife", icon=None, description="A fukkin knice", damage_mul=1) # type: ignore
 inventory.give_item(key_item, 4)
 inventory.give_item(dumb_item, 3)
 inventory.give_item(knife, 1)
@@ -46,7 +58,7 @@ clock = pg.time.Clock()
 running=True
 delta_time = 0.
 f_no = 0
-max_fps = 144
+max_fps = 250
 while running:
     inputstate.reset_input()
     for event in pg.event.get():

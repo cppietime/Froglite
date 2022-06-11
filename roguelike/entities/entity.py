@@ -65,6 +65,7 @@ class Entity:
     interactable: ClassVar[bool] = False
     base_size: ClassVar[int] = 1
     name: ClassVar[str] = 'Entity'
+    particle_backdrop: ClassVar[Optional[sprite.Animation]] = None
     
     def __post_init__(self):
         if self.class_anim is not None:
@@ -177,6 +178,7 @@ class Entity:
                           blocking)
     
     pain_particle_y: ClassVar[float] = 1 / 4
+    pain_particle_w: ClassVar[float] = 12
     pain_particle_h: ClassVar[float] = 1 / 2
     pain_particle_v: ClassVar[float] = 50
         
@@ -186,10 +188,11 @@ class Entity:
                       color: Tuple[float, float, float, float]\
                           =(1, 0, 0, 1)):
         state = cast('DungeonMapState', state)
-        p_rect = tween.AnimatableMixin(self.rect.x,
+        width = (2 + len(msg)) * self.pain_particle_w
+        p_rect = tween.AnimatableMixin(self.rect.x + (self.rect.h - width) / 2,
                                        self.rect.y - self.rect.h\
                                            * self.pain_particle_y,
-                                       self.rect.w,
+                                       width,
                                        self.rect.h * self.pain_particle_h)
         state.spawn_particle(
             p_rect,
@@ -198,7 +201,8 @@ class Entity:
                     p_rect, 'y', p_rect.y, p_rect.y - self.pain_particle_v, 1))
             ]),
             msg,
-            color)
+            color,
+            self.particle_backdrop)
 
 class FightingEntity(Entity):
     """Entities that can take and deal damage and die

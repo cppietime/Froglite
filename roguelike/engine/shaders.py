@@ -81,7 +81,7 @@ uniform sampler2D tex;
 void main() {
     vec4 in_color = texture(tex, out_uv);
     /* I will probably want to change this to a better luminocity formula */
-    float lum = in_color.x * .25 + in_color.y * .5 + in_color.z * .25;
+    float lum = in_color.x * .299 + in_color.y * .587 + in_color.z * .114;
     bloomColor = (lum >= threshold) ? vec4(in_color) : vec4(0);
 }
 """, varyings = ('out_uv',))

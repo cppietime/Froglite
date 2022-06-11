@@ -47,22 +47,26 @@ class PlayerEntity(entity.FightingEntity):
             state.inputstate.keys[pg.K_LSHIFT][inputs.KeyState.PRESSED]\
             or state.inputstate.keys[pg.K_RSHIFT][inputs.KeyState.PRESSED]
         _n_dungeon_pos = self.dungeon_pos[:]
-        if state.inputstate.keys[pg.K_UP][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_UP][inputs.KeyState.DOWN]\
+                or state.inputstate.keys[pg.K_w][inputs.KeyState.DOWN]:
             diff = -state.tile_size
             _n_dungeon_pos[1] -= 1
             self.anim.direction = sprite.AnimDir.UP
             prop = 'y'
-        if state.inputstate.keys[pg.K_DOWN][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_DOWN][inputs.KeyState.DOWN]\
+                or state.inputstate.keys[pg.K_s][inputs.KeyState.DOWN]:
             diff = state.tile_size
             _n_dungeon_pos[1] += 1
             self.anim.direction = sprite.AnimDir.DOWN
             prop = 'y'
-        if state.inputstate.keys[pg.K_LEFT][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_LEFT][inputs.KeyState.DOWN]\
+                or state.inputstate.keys[pg.K_a][inputs.KeyState.DOWN]:
             diff = -state.tile_size
             _n_dungeon_pos[0] -= 1
             self.anim.direction = sprite.AnimDir.LEFT
             prop = 'x'
-        if state.inputstate.keys[pg.K_RIGHT][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_RIGHT][inputs.KeyState.DOWN]\
+                or state.inputstate.keys[pg.K_d][inputs.KeyState.DOWN]:
             diff = state.tile_size
             _n_dungeon_pos[0] += 1
             self.anim.direction = sprite.AnimDir.RIGHT
@@ -89,7 +93,8 @@ class PlayerEntity(entity.FightingEntity):
                 state.let_entities_move()
                 yield False
             state.start_event(event_manager.Event(_event))
-        if state.inputstate.keys[pg.K_LCTRL][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_LCTRL][inputs.KeyState.DOWN]\
+                or state.inputstate.keys[pg.K_RCTRL][inputs.KeyState.DOWN]:
             # Attempt to attack
             t_x, t_y = self.dungeon_pos
             if self.anim.direction == sprite.AnimDir.UP:

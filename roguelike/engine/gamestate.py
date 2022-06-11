@@ -1,4 +1,7 @@
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING
+)
 
 from . import (
     awaiting,
@@ -46,20 +49,20 @@ class GameState(event_manager.EventManagerMixin,
         for callback in self.callbacks_on_push:
             callback(self)
     
-    def on_pop(self) -> None:
+    def on_pop(self, under: Optional['GameState']) -> None:
         """Called when a state is popped from the stack"""
         for callback in self.callbacks_on_pop:
-            callback(self)
+            callback(under)
     
-    def on_covered(self) -> None:
+    def on_covered(self, other: 'GameState') -> None:
         """Called when a state is covered from a push"""
         for callback in self.callbacks_on_covered:
-            callback(self)
+            callback(other)
     
-    def on_uncovered(self) -> None:
+    def on_uncovered(self, other: 'GameState') -> None:
         """Called when a state is uncovered from a pop"""
         for callback in self.callbacks_on_uncovered:
-            callback(self)
+            callback(other)
     
     def die(self) -> None:
         """Pop self"""
@@ -84,17 +87,19 @@ class GameStateManager:
     
     def push_state(self, new_state: GameState) -> None:
         if len(self.state_stack) > 0:
-            self.state_stack[-1].on_covered()
+            self.state_stack[-1].on_covered(new_state)
         new_state.on_push(self)
         self.state_stack.append(new_state)
     
     def pop_state(self) -> GameState:
         if len(self.state_stack) == 0:
             raise AttributeError("State stack is already empty!")
-        self.state_stack[-1].on_pop()
+        top = self.state_stack[-1]
+        under = None if len(self.state_stack) == 1 else self.state_stack[-2]
+        self.state_stack[-1].on_pop(under)
         removed = self.state_stack.pop()
         if len(self.state_stack) > 0:
-            self.state_stack[-1].on_uncovered()
+            self.state_stack[-1].on_uncovered(top)
         return removed
     
     def any_states_active(self) -> bool:

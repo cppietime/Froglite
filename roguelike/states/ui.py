@@ -81,6 +81,7 @@ class Label:
     scale: Optional[float] = None
     alignment: Tuple[txt.AlignmentH, txt.AlignmentV] =\
         (txt.AlignmentH.LEFT, txt.AlignmentV.CENTER)
+    max_width: Optional[float] = None
     
     offset: tween.AnimatableMixin =\
         field(default_factory = tween.AnimatableMixin)
@@ -112,15 +113,23 @@ class Label:
             size = (self.text_rect[2] + self.offset.w,
                     self.text_rect[3] + self.offset.h)
             if self.scale is None:
-                scale = self.font.scale_to_bound(self.text, size)
+                n_scale = self.font.scale_to_bound(self.text, size)
+                scale: Tuple[float, float] = (n_scale, n_scale)
             else:
-                scale = self.scale
-            self.font.draw_str_in(self.text,
+                oscale: Optional[Tuple[float, float]]
+                oscale = scale =\
+                    (self.scale, self.scale)
+            new_str = self.font.split_str(self.text,
+                                          scale,
+                                          self.text_rect[2])
+            if self.scale is None:
+                oscale = None
+            self.font.draw_str_in(new_str,
                                   pos,
                                   size,
                                   cast(Tuple[float, float, float, float],
                                        tuple(self.text_color)),
-                                  (scale, scale),
+                                  oscale,
                                   self.alignment)
             
     def update(self, delta_time: float, state: gamestate.GameState):
@@ -182,9 +191,9 @@ class TwoLabelButton(Button):
             render_target = self.inactive
         else:
             render_target = self.active
-        render_target.offset.w = self.offset.w
-        render_target.offset.h = self.offset.h
-        render_target.offset.rotation  = self.offset.rotation
+        # render_target.offset.w = self.offset.w
+        # render_target.offset.h = self.offset.h
+        # render_target.offset.rotation  = self.offset.rotation
         render_target.render(delta_time, renderer, (x, y), selected)
         
 @dataclass
@@ -382,6 +391,9 @@ class MetaWidget:
             old_fbo = renderer.current_fbo()
             new_fbo = renderer.push_fbo()
             renderer.clear()
+        elif self.reset_scr is not None:
+            old_fbo = renderer.current_fbo()
+            new_fbo = renderer.push_fbo()
         
         if self.reset_scr is not None:
             renderer.clear(*cast(Tuple[float, float, float, float],
@@ -412,6 +424,10 @@ class MetaWidget:
                                             .color_attachments[0])
                 renderer.pop_fbo()
                 old_fbo.use()
+        elif self.reset_scr is not None:
+            renderer.fbo_to_fbo(old_fbo, new_fbo)
+            renderer.pop_fbo()
+            old_fbo.use()
     
     def validate(self):
         self.widget.validate()
@@ -447,10 +463,13 @@ class PoppableMenu(MenuState):
         self.auto_pop = False
         self.obscured = False
         self.obscures = True
-        self.callbacks_on_covered.append(
-            lambda state: setattr(state, 'obscured', self.obscures))
+        self.callbacks_on_covered.append(self._obscure_state)
         self.callbacks_on_uncovered.append(
             lambda _: setattr(self, 'obscured', False))
+    
+    def _obscure_state(self, state):
+        print(f'{self}, {state}, {state.obscures}')
+        self.obscured = state.obscures
     
     def _trigger_pop(self) -> None:
         pass
@@ -468,11 +487,11 @@ class PoppableMenu(MenuState):
         if not self.obscured:
             super().render_gamestate(delta_time, renderer)
     
-    def on_uncovered(self):
-        super().on_uncovered()
+    def on_uncovered(self, other):
+        super().on_uncovered(other)
         if self.auto_pop:
             self._trigger_pop()
     
-    def on_pop(self):
+    def on_pop(self, under):
         self.auto_pop = False
-        super().on_pop()
+        super().on_pop(under)
