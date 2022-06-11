@@ -77,6 +77,14 @@ class DungeonParticle:
         return active
 
 class DungeonMap:
+    """A map of a dungeon
+    
+    Arguments:
+    size: Dimensions (w, h) in tiles, can probably be refactored out
+    tiles: List of tiles that can be drawn from
+    vignette_color: Color blended with tiles outside of FOV,
+        can vary per map
+    """
     def __init__(self,
                  size: Tuple[int, int],
                  tiles: List[DungeonTile],
@@ -184,7 +192,17 @@ class DungeonMap:
             self.entities.pop(check_pos)
 
 class DungeonMapState(gamestate.GameState):
-    """Gamestate for traversing a dungeon"""
+    """Gamestate for traversing a dungeon
+    
+    Arguments:
+    dungeon: DungeonMap instance for the level
+    tile_size: Size in pixels of each tile
+    
+    ClassVars:
+    vignette_sprite: Masking sprite for vignette effect
+    font: CharBank to render text in
+    base_text_scale: Adjustment parameter to scale text
+    """
     vignette_sprite: ClassVar[sprite.Sprite]
     font: ClassVar[text.CharBank]
     base_text_scale: ClassVar[float]

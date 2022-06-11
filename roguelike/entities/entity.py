@@ -28,6 +28,25 @@ if TYPE_CHECKING:
 
 @dataclass
 class Entity:
+    """Anything on the screen with state
+    Subclasses have some class variables to control behavior
+    
+    ClassVars:
+    class_anim: default animation for rendering instances
+    actionable: True if these entities take actions after the player
+    attackable: Can the player  attack it?
+    interactable: Can the player speak to/interact with it?
+    base_size: Size in pixels of an entity
+    name: For debuggin at least for now
+    pain_particle_y: Height above the entity for damage indicator
+    pain_particle_h: Size of the damage indicator
+    pain_particle_v: How far up the damage indicator moves before
+        disappearing
+    
+    The player moves/takes actions in the update_entity function when
+    the state is unlocked. If the player takes an action, it queues an
+    event that lets other actionable entities take their actions as well
+    """
     passable: bool
     dungeon_pos: List[int] = field(default_factory=lambda: [0, 0])
     rect: tween.AnimatableMixin =\
@@ -44,7 +63,7 @@ class Entity:
     actionable: ClassVar[bool] = False
     attackable: ClassVar[bool] = False
     interactable: ClassVar[bool] = False
-    base_size: ClassVar[int]
+    base_size: ClassVar[int] = 1
     name: ClassVar[str] = 'Entity'
     
     def __post_init__(self):
@@ -73,6 +92,7 @@ class Entity:
                       delta_time: float,
                       renderer: 'Renderer',
                       base_offset: Tuple[float, float]) -> None:
+        """For UI/effects that need to not be obscured by other entities"""
         pass
     
     def update_entity(self,
@@ -90,6 +110,7 @@ class Entity:
                      speed_at_end: Optional[float] = None,
                      reset_time_to: Optional[float] = None,
                      blocking: bool = True) -> None:
+        """Helper function to start an animation and reset state afterwards"""
         if state_at_end is not None:
             tweens.append((duration, tween.Tween(self.anim,
                                                  'state',
@@ -130,6 +151,9 @@ class Entity:
                             blocking: bool = True,
                             interpolation: Callable[[float], float]=\
                                 tween.smoothstep) -> None:
+        """Starts an animation on an entity to move to another point with
+        some interpolation function
+        """
         tweens = [
             (0., tween.Tween(self.rect,
                             'x',
@@ -177,6 +201,14 @@ class Entity:
             color)
 
 class FightingEntity(Entity):
+    """Entities that can take and deal damage and die
+    
+    Arguments:
+    max_hp: Default starting HP
+    
+    ClassVars:
+    attack_length: Duration of the attack melee animation
+    """
     def __init__(self, *args, **kwargs):
         self.max_hp: int = kwargs.pop('max_hp')
         self.hp = self.max_hp
@@ -236,6 +268,15 @@ class FightingEntity(Entity):
     
 class ActingEntity(FightingEntity):
     """Entities that take actions between turns
+    
+    Arguments:
+    action_cost: How much energy it takes to perform one action
+    
+    ClassVars:
+    detection_radius: How far can it be from the player and still act
+    hit_bounces: How many times to shiver when struck
+    hit_size: How far to shiver
+    hit_length: For how long to shiver
     """
     actionable = True
     name = 'Actor'
@@ -290,6 +331,12 @@ class ActingEntity(FightingEntity):
 
 class EnemyEntity(ActingEntity):
     """Base class for enemies
+    
+    ClassVars:
+    hp_font: Font to render HP indicators
+    hp_bar_y: Height of HP indicator above entity
+    hp_bar_h: Size of HP indicator (height)
+    hp_bar_color: Color of HP indicator text
     """
     attackable = True
     

@@ -28,7 +28,7 @@ while running:
     rend.render_sprite(spr, (200, 200), spr.size_texels, positioning=('left', 'top'), color=(1, 0, 0.5, 1))
     
     font.draw_str("Hello, world!", (50, 50))
-    font.draw_str("Wrap me", (50, 500), scale=(2, 2), max_width=200)
+    font.draw_str("Wrap me", (60, 300), scale=(2, 2), max_width=200)
     
     pg.display.flip()
     clock.tick(144)

@@ -31,7 +31,7 @@ class AnimDir(Enum):
     LEFT    = 3
     RIGHT   = 4
 
-@dataclass
+@dataclass(unsafe_hash=True, eq=True)
 class Sprite:
     texture: mgl.texture.Texture
     topleft_texels: Tuple[int, int]

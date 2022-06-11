@@ -14,6 +14,7 @@ from roguelike.entities import (
     player,
     slow_chaser
 )
+from roguelike.bag import inventory_state
 
 pg.init()
 screen = pg.display.set_mode(settings.SCREEN_SIZE, pg.DOUBLEBUF | pg.OPENGL)
@@ -29,6 +30,8 @@ dungeon.DungeonMapState.init_sprites(rend)
 player.PlayerEntity.init_sprites(rend)
 slow_chaser.SlowChaserEntity.init_sprites(rend)
 entity.EnemyEntity.hp_font = dungeon.DungeonMapState.font
+inventory_state.InventoryBaseScreen.set_font(rend.get_font('Consolas', 64))
+inventory_state.InventoryBaseScreen.init_globs()
 
 tile_tex = rend.load_texture('tile.png', filter=(mgl.NEAREST, mgl.NEAREST))
 tile_spr = sprite.Sprite(tile_tex, (0, 0), tile_tex.size, color=(1, 1, .8, 1))

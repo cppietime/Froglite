@@ -15,6 +15,10 @@ from roguelike.engine import (
     tween
 )
 from roguelike.entities import entity
+from roguelike.bag import (
+    inventory_state,
+    item
+)
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
@@ -30,6 +34,9 @@ class PlayerEntity(entity.FightingEntity):
         self.anim.speed = 0
         self.anim.direction = sprite.AnimDir.DOWN
         self.shaky_cam: List[int] = [0, 0]
+        self.inventory = item.Inventory()
+        self.inv_state = inventory_state.InventoryBaseScreen(
+            inventory=self.inventory)
     
     walk_length: ClassVar[float] = .25
     
@@ -101,6 +108,13 @@ class PlayerEntity(entity.FightingEntity):
                 elif target_ent.interactable:
                     # TODO NPC interaction
                     pass
+        if state.inputstate.keys[pg.K_RETURN][inputs.KeyState.DOWN]:
+            def _menu(state, event):
+                while state.locked():
+                    yield True
+                state.manager.push_state(self.inv_state)
+                yield False
+            state.queue_event(event_manager.Event(_menu))
     
     def render_entity(self, delta_time, renderer, base_offset):
         super().render_entity(delta_time, renderer, base_offset)
