@@ -468,7 +468,6 @@ class PoppableMenu(MenuState):
             lambda _: setattr(self, 'obscured', False))
     
     def _obscure_state(self, state):
-        print(f'{self}, {state}, {state.obscures}')
         self.obscured = state.obscures
     
     def _trigger_pop(self) -> None:

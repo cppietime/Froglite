@@ -20,8 +20,8 @@ from typing import (
 
 import pygame as pg
 
-from roguelike import settings
 from roguelike.engine import (
+    assets,
     gamestate,
     inputs,
     sprite,
@@ -207,6 +207,7 @@ class DungeonMapState(gamestate.GameState):
     vignette_sprite: ClassVar[sprite.Sprite]
     font: ClassVar[text.CharBank]
     base_text_scale: ClassVar[float]
+    base_tile_size: ClassVar[float] = 64
 
     def __init__(self, *args, **kwargs):
         self.dungeon_map = kwargs.pop('dungeon')
@@ -214,6 +215,7 @@ class DungeonMapState(gamestate.GameState):
         super().__init__(*args, **kwargs)
         self.camera = tween.AnimatableMixin()
         self.particles: List[DungeonParticle] = []
+        self.vignette_sprite = assets.Sprites.instance.vignette
     
     def render_gamestate(self,
                          delta_time: float,
@@ -397,9 +399,9 @@ class DungeonMapState(gamestate.GameState):
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:
-        tex = renderer.load_texture('vignette.png')
-        cls.vignette_sprite = sprite.Sprite(tex, (0, 0), tex.size)
+        # tex = renderer.load_texture('vignette.png')
+        # cls.vignette_sprite = sprite.Sprite(tex, (0, 0), tex.size)
         cls.font = renderer.get_font('Consolas', 64)
         cls.base_text_scale = cls.font.scale_to_bound(
-            "O", (settings.BASE_TEXT_SIZE,) * 2)
+            "O", (cls.base_tile_size,) * 2)
         print(cls.base_text_scale)

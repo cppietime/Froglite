@@ -14,6 +14,7 @@ from typing import (
 import pygame as pg
 
 from roguelike.engine import (
+    assets,
     event_manager,
     inputs,
     text,
@@ -205,11 +206,13 @@ class InventoryBaseScreen(ui.PoppableMenu):
         cls.header_scale = font.scale_to_bound(
             "Spells", (w, h))
         cls.text_scale = font.scale_to_bound(
-            "Spells", (w / 2, h / 2))
+            "Spells", (w * .5, h * .5))
     
-    @staticmethod
-    def init_globs() -> None:
+    @classmethod
+    def init_globs(cls) -> None:
         global _itemslotsubscreens, _itemusescreen, _usetossscreen
+        cls.active_button_bg = assets.Sprites.instance.button_active
+        cls.inactive_button_bg = assets.Sprites.instance.button_inactive
         _itemslotsubscreens = {
             slot: ItemSlotSubscreen() for slot in item.ItemSlot
         }
@@ -231,7 +234,7 @@ class ItemSlotSubscreen(ui.PoppableMenu):
     icon_x: ClassVar[float] = (menu_w - icon_size) / 2
     item_spacing: ClassVar[float] = item_row_height + icon_size
     back_button_sep: ClassVar[float] = 20
-    scroll_threshold: ClassVar[int] = 2
+    scroll_threshold: ClassVar[int] = 3
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -250,7 +253,7 @@ class ItemSlotSubscreen(ui.PoppableMenu):
         self.desc_widget = ui.Label(text_rect=[
                                         0., 0.,
                                         self.panel_w, self.panel_w],
-                                    text="Whatevs",
+                                    text="You should not see this",
                                     font=InventoryBaseScreen.font,
                                     scale=InventoryBaseScreen.text_scale)
         self.mainholder.widgets += [self.menu_widget, self.desc_widget]
@@ -353,8 +356,10 @@ class ItemSlotSubscreen(ui.PoppableMenu):
         if self.obscured:
             # print('submenu obscured')
             return
-        if self.menu_widget.selection >= len(self.slot):
+        if len(self.slot) == 0:
             text = "Nothing here..."
+        elif self.menu_widget.selection == len(self.slot):
+            text = "Return to previous menu"
         else:
             itm = list(self.slot.items())[self.menu_widget.selection][0]
             text = itm.description
@@ -518,13 +523,21 @@ class UseTossScreen(ui.PoppableMenu):
 
 class ItemUseConfirmation(ui.PoppableMenu):
     """Just a message box when you use something"""
+    start_y: ClassVar[float] = ItemSlotSubscreen.item_spacing\
+        + ItemSlotSubscreen.back_button_sep\
+        + (UseTossScreen.button_height\
+            + UseTossScreen.button_spacing) * 1
+    end_y: ClassVar[float] = 720
+    width: ClassVar[float] = 960
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.obscures = True
         metawidget = self.widget
         metawidget.reset_scr = [0., 0., 0., .25]
         self.holder = metawidget.widget
         self.textbox = ui.Label(text="",
-                                text_rect=[0, 0, 200, 200],
+                                text_rect=[0, self.start_y, self.width, self.end_y - self.start_y],
                                 font=InventoryBaseScreen.font,
                                 scale=InventoryBaseScreen.text_scale)
         button = ui.TwoLabelButton(active=self.textbox,

@@ -1,0 +1,36 @@
+Implemented:
+Graphics rendering
+Tweening and animation
+Player movement
+Tiled world (static)
+Menu framework
+Pathfinding enemies (a-star)
+Combat animation and damage dealing
+Gfx effects (vignette, exposure)
+
+In progress:
+Menu gfx design
+Configurable parameters (lazy resources?)
+
+Ongoing long term:
+Asset creation
+
+To-do soon:
+Game over state
+Speaking NPCs
+Overworld items
+Drop items
+Spells
+
+To-do long term:
+Enrich combat
+Shops
+World generation
+Global flags
+Sound
+Save/load
+
+Stretch goal:
+Changing resolution
+Remap input
+Toss/sell/buy N amount screen state

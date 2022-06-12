@@ -102,7 +102,7 @@ class SpellItem(EquipableItem):
 
 class Inventory:
     def __init__(self, *args, **kwargs):
-        self.owner: 'FightingEntity' = kwargs.get('owner', None)
+        self.owner: 'FightingEntity' = kwargs.pop('owner', None)
         super().__init__(*args, **kwargs)
         self.items: Dict[ItemSlot, OrderedDict[BaseItem, int]] = {
             slottype: collections.OrderedDict() for slottype in ItemSlot

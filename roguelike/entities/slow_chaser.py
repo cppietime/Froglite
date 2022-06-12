@@ -6,6 +6,7 @@ from typing import (
 )
 
 from roguelike.engine import (
+    assets,
     event_manager,
     sprite,
     tween
@@ -24,6 +25,7 @@ class SlowChaserEntity(entity.EnemyEntity):
     detection_radius = 5
     
     def __init__(self, *args, **kwargs):
+        self.class_anim = assets.Animations.instance.slow_chaser
         super().__init__(*args,
                          passable=False,
                          action_cost=2,
@@ -63,21 +65,22 @@ class SlowChaserEntity(entity.EnemyEntity):
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:
-        texture = renderer.load_texture('monsters/slow_chaser.png')
-        seq = sprite.Animation.from_atlas(texture, (64, 64), ((0, 0),
-                                                              (0, 0),
-                                                              (0, 0),
-                                                              (0, 0)))
-        for i, spr in enumerate(seq):
-            spr.angle = -i * math.pi / 2
-        cls.class_anim = sprite.Animation({
-            sprite.AnimState.DEFAULT: {
-                sprite.AnimDir.DEFAULT: seq
-            },
-            sprite.AnimState.WALK: {
-                sprite.AnimDir.DEFAULT: seq
-            },
-            sprite.AnimState.ATTACK: {
-                sprite.AnimDir.DEFAULT: seq
-            }
-        }, 6)
+        pass
+        # texture = renderer.load_texture('monsters/slow_chaser.png')
+        # seq = sprite.Animation.from_atlas(texture, (64, 64), ((0, 0),
+                                                              # (0, 0),
+                                                              # (0, 0),
+                                                              # (0, 0)))
+        # for i, spr in enumerate(seq):
+            # spr.angle = -i * math.pi / 2
+        # cls.class_anim = sprite.Animation({
+            # sprite.AnimState.DEFAULT: {
+                # sprite.AnimDir.DEFAULT: seq
+            # },
+            # sprite.AnimState.WALK: {
+                # sprite.AnimDir.DEFAULT: seq
+            # },
+            # sprite.AnimState.ATTACK: {
+                # sprite.AnimDir.DEFAULT: seq
+            # }
+        # }, 6)

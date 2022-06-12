@@ -9,6 +9,7 @@ from typing import (
 import pygame as pg
 
 from roguelike.engine import (
+    assets,
     event_manager,
     inputs,
     sprite,
@@ -30,11 +31,13 @@ class PlayerEntity(entity.FightingEntity):
     sqr_sprite: ClassVar[sprite.Sprite]
     
     def __init__(self, *args, **kwargs):
+        self.class_anim = assets.Animations.instance.player
+        self.sqr_sprite = assets.Sprites.instance.highlight
         super().__init__(*args, passable=False, max_hp=100, **kwargs)
         self.anim.speed = 0
         self.anim.direction = sprite.AnimDir.DOWN
         self.shaky_cam: List[int] = [0, 0]
-        self.inventory = item.Inventory()
+        self.inventory = item.Inventory(owner=self)
         self.inv_state = inventory_state.InventoryBaseScreen(
             inventory=self.inventory)
     
@@ -238,40 +241,41 @@ class PlayerEntity(entity.FightingEntity):
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:
-        texture = renderer.load_texture('player_debug.png')
-        down = sprite.Animation.from_atlas(texture, (64, 64), (
-            (0, 0), (64, 0), (128, 0), (192, 0)
-        ))
-        up = sprite.Animation.from_atlas(texture, (64, 64), (
-            (0, 64), (64, 64), (128, 64), (192, 64)
-        ))
-        left = sprite.Animation.from_atlas(texture, (64, 64), (
-            (0, 128), (64, 128), (128, 128), (192, 128)
-        ))
-        right = sprite.Animation.from_atlas(texture, (-64, 64), (
-            (63, 128), (127, 128), (191, 128), (255, 128)
-        ))
-        walking: Dict[sprite.AnimDir, Sequence[sprite.Sprite]] = {
-                sprite.AnimDir.DOWN: down,
-                sprite.AnimDir.UP: up,
-                sprite.AnimDir.LEFT: left,
-                sprite.AnimDir.RIGHT: right,
-                sprite.AnimDir.DEFAULT: down
-            }
-        standing: Dict[sprite.AnimDir, Sequence[sprite.Sprite]] = {
-                sprite.AnimDir.DOWN: down,
-                sprite.AnimDir.UP: up,
-                sprite.AnimDir.LEFT: left,
-                sprite.AnimDir.RIGHT: right,
-                sprite.AnimDir.DEFAULT: down
-            }
-        cls.class_anim = sprite.Animation({
-            sprite.AnimState.DEFAULT: standing,
-            sprite.AnimState.IDLE: standing,
-            sprite.AnimState.WALK: walking,
-        }, 12)
+        pass
+        # texture = renderer.load_texture('player_debug.png')
+        # down = sprite.Animation.from_atlas(texture, (64, 64), (
+            # (0, 0), (64, 0), (128, 0), (192, 0)
+        # ))
+        # up = sprite.Animation.from_atlas(texture, (64, 64), (
+            # (0, 64), (64, 64), (128, 64), (192, 64)
+        # ))
+        # left = sprite.Animation.from_atlas(texture, (64, 64), (
+            # (0, 128), (64, 128), (128, 128), (192, 128)
+        # ))
+        # right = sprite.Animation.from_atlas(texture, (-64, 64), (
+            # (63, 128), (127, 128), (191, 128), (255, 128)
+        # ))
+        # walking: Dict[sprite.AnimDir, Sequence[sprite.Sprite]] = {
+                # sprite.AnimDir.DOWN: down,
+                # sprite.AnimDir.UP: up,
+                # sprite.AnimDir.LEFT: left,
+                # sprite.AnimDir.RIGHT: right,
+                # sprite.AnimDir.DEFAULT: down
+            # }
+        # standing: Dict[sprite.AnimDir, Sequence[sprite.Sprite]] = {
+                # sprite.AnimDir.DOWN: down,
+                # sprite.AnimDir.UP: up,
+                # sprite.AnimDir.LEFT: left,
+                # sprite.AnimDir.RIGHT: right,
+                # sprite.AnimDir.DEFAULT: down
+            # }
+        # cls.class_anim = sprite.Animation({
+            # sprite.AnimState.DEFAULT: standing,
+            # sprite.AnimState.IDLE: standing,
+            # sprite.AnimState.WALK: walking,
+        # }, 12)
         
-        cls.sqr_sprite = sprite.Sprite(
-            renderer.load_texture('effects.png'),
-            (0, 0), (64, 64))
+        # cls.sqr_sprite = sprite.Sprite(
+            # renderer.load_texture('effects.png'),
+            # (0, 0), (64, 64))
     
