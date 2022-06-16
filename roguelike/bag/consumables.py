@@ -94,3 +94,4 @@ def init_items() -> None:
         kind = cast(str, value['kind'])
         constructor = _consumable_kinds[kind]
         items[name] = constructor(name, description, icon, value)
+    item.items.update(items)

@@ -12,6 +12,7 @@ from typing import (
 
 import moderngl as mgl # type: ignore
 import numpy as np
+from PIL import Image # type: ignore
 import pygame as pg
 
 from . import (
@@ -26,7 +27,6 @@ Color = Tuple[float, float, float, float]
 
 class Renderer:
     def __init__(self, gl_ctx, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         self.gl_ctx = gl_ctx
         self.gl_ctx.enable(mgl.BLEND)
         self.gl_ctx.blend_func = mgl.SRC_ALPHA, mgl.ONE_MINUS_SRC_ALPHA
@@ -37,8 +37,9 @@ class Renderer:
         self.fbo_stack_top = -1
         self.charbanks = {}
         self.screen = self.gl_ctx.screen
-        self.screen_size = self.screen.size
+        self.screen_size = kwargs.pop('screen_size', self.screen.size)
         self.create_defaults()
+        super().__init__(*args, **kwargs)
     
     def register_program(self,
                          name: str,
@@ -95,7 +96,7 @@ class Renderer:
             return self.screen
         return self.gl_ctx.fbo
     
-    def push_fbo(self) -> mgl.Framebuffer:
+    def push_fbo(self, tex_params: Dict[str, Any]={}) -> mgl.Framebuffer:
         """Activates the next-up FBO"""
         self.fbo_stack_top += 1
         if self.fbo_stack_top == len(self.fbo_stack):
@@ -103,7 +104,8 @@ class Renderer:
                                         self.screen_size,
                                         1,
                                         False,
-                                        False)
+                                        False,
+                                        tex_params)
             self.fbo_stack.append(new_fbo)
         new_fbo = self.fbo_stack[self.fbo_stack_top]
         new_fbo.use()
@@ -120,17 +122,16 @@ class Renderer:
     def load_texture(self,
                      imgname: str,
                      **kwargs) -> mgl.Texture:
-        # if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-            # basedir = sys._MEIPASS
-        # else:
-            # basedir = os.path.join(os.path.split(__file__)[0], os.pardir)
-        # assetdir = os.path.join(basedir, 'assets', imgname)
+        """Right now I'm using PIL Images to load these textures
+        If I use pygame surfaces instead, I need to use swizzle"""
         assetdir = assets.asset_path(imgname)
-        img = pg.transform.flip(pg.image.load(assetdir).convert_alpha(),
-                                False,
-                                True) # Flip vertically because OpenGL
-        tex = self.gl_ctx.texture(img.get_size(), 4, img.get_buffer())
-        tex.swizzle = 'BGRA'
+        # img = pg.transform.flip(pg.image.load(assetdir).convert_alpha(),
+                                # False,
+                                # True) # Flip vertically because OpenGL
+        img = Image.open(assetdir).convert('RGBA').transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        # tex = self.gl_ctx.texture(img.get_size(), 4, img.get_buffer())
+        tex = self.gl_ctx.texture(img.size, 4, img.tobytes())
+        # tex.swizzle = 'BGRA'
         for key, value in kwargs.items():
             setattr(tex, key, value)
         return tex
@@ -308,13 +309,13 @@ class Renderer:
               depth:float=1) -> None:
         self.current_fbo().clear(r, g, b, a, depth)
     
-    def get_font(self, name: str, size: int) -> text.CharBank:
+    def get_font(self, name: str, size: int, **kwargs) -> text.CharBank:
         key = name, size
         if key not in self.charbanks:
             self.charbanks[key] = text.CharBank.fontCharBank(name,
                                                             self,
-                                                            antialiasing=False,
-                                                            size=size)
+                                                            size=size,
+                                                            **kwargs)
         return self.charbanks[key]
     
     def create_defaults(self) -> None:

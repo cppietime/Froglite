@@ -1,0 +1,57 @@
+{
+    "slow_chaser": {
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": [
+                    "slow_chaser-0", "slow_chaser-1",
+                    "slow_chaser-2", "slow_chaser-3"
+                ]
+            }
+        },
+        "speed": 6
+    },
+    "player": {
+        "speed": 12,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": [
+                    "player-0", "player-1", "player-2", "player-3"
+                ],
+                "DOWN": [
+                    "player-0", "player-1", "player-2", "player-3"
+                ],
+                "UP": [
+                    "player-4", "player-5", "player-6", "player-7"
+                ],
+                "LEFT": [
+                    "player-8", "player-9", "player-10", "player-11"
+                ],
+                "RIGHT": [
+                    "player-12", "player-13", "player-14", "player-15"
+                ]
+            }
+        }
+    },
+    "tile": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["tile-0", "tile-1", "tile-2", "tile-3"]
+            }
+        }
+    },
+    "wall": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["tile-4"]
+            }
+        }
+    },
+    "shadow": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {"DEFAULT": ["shadow"]}
+        }
+    }
+}

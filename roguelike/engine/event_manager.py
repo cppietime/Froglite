@@ -56,6 +56,9 @@ class EventManagerMixin:
     def events_left(self) -> int:
         """Number of incomplete events"""
         return len(self.active_events) + len(self.event_queue)
+    
+    def cancel_events(self) -> None:
+        self.event_queue.clear()
 
 @dataclass
 class Event(AwaiterMixin, AwaitableMixin):

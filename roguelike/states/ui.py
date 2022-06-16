@@ -154,9 +154,10 @@ class Button:
     
     offset: tween.AnimatableMixin =\
         field(default_factory = tween.AnimatableMixin)
+    enabled: bool = True
     
     def selectable(self) -> bool:
-        return True
+        return self.enabled
     
     def render(self,
                delta_time: float,
@@ -494,3 +495,79 @@ class PoppableMenu(MenuState):
     def on_pop(self, under):
         self.auto_pop = False
         super().on_pop(under)
+
+default_font: 'CharBank'
+
+def build_button_widget(txt: str,
+                         rect: List[float],
+                         scale: Optional[float],
+                         margins: Tuple[float, float] = (0, 0),
+                         command: Callable[[gamestate.GameState], None] =\
+                            lambda _: None,
+                         active_text_color: Optional[List[float]]=None,
+                         inactive_text_color: Optional[List[float]]=None,
+                         alignment: Tuple[txt.AlignmentH, txt.AlignmentV]=\
+                            (txt.AlignmentH.LEFT, txt.AlignmentV.CENTER),
+                         active_bg_color: Optional[List[float]]=None,
+                         inactive_bg_color: Optional[List[float]]=None,
+                         active_bg_sprite: Optional['Sprite']=None,
+                         inactive_bg_sprite: Optional['Sprite']=None)\
+                         -> Widget:
+    """Lots of mostly default-none arguments:
+    
+    txt: Text on the button
+    rect: Bounding rectangle of the button
+    scale: Scale parameter for text rendering
+    margins: Symmetric pixel amounts to offset text by within the button
+        (x, y)
+    command: Function to call when the button is activated
+    active_text_color: Color of text when button is selected
+    inactive_text_color: Color of text when button is not selected
+    alignment: Alignment of text in horizontal and vertical directions
+    active_bg_color: Color (if any) to clear the backdrop to when selected
+    inactive_bg_color: Color for backdrog when not selected
+    active_bg_sprite: Sprite to render behind text when button is selected
+    inactive_bg_sprite: Sprite for when button is not selected
+    """
+    if active_text_color is None:
+        active_text_color = [1, 0, 1, 1]
+    if inactive_text_color is None:
+        inactive_text_color = [0, 0, 0, 1]
+        
+    if active_bg_color is None:
+        active_bg_color = [0, 0, 0, 0]
+    if inactive_bg_color is None:
+        inactive_bg_color = [0, 0, 0, 0]
+    
+    text_rect = [rect[0] + margins[0], rect[1] + margins[1],
+                 rect[2] - margins[0] * 2,
+                 rect[3] - margins[1] * 2]
+    
+    active_label = Label(text=txt,
+                            text_rect=text_rect,
+                            bg_rect=rect,
+                            bg=active_bg_sprite,
+                            scale=scale,
+                            font=default_font,
+                            text_color=active_text_color,
+                            alignment=alignment)
+    inactive_label = Label(text=txt,
+                            text_rect=text_rect,
+                            bg_rect=rect,
+                            bg=inactive_bg_sprite,
+                            scale=scale,
+                            font=default_font,
+                            text_color=inactive_text_color,
+                            alignment=alignment)
+    
+    active_meta = MetaWidget(active_label,
+                                tween.AnimatableMixin(*rect),
+                                reset_scr=active_bg_color)
+    
+    inactive_meta = MetaWidget(inactive_label,
+                                  tween.AnimatableMixin(*rect),
+                                  reset_scr=inactive_bg_color)
+    
+    return TwoLabelButton(
+        active=active_meta, inactive=inactive_meta,
+        command=command)

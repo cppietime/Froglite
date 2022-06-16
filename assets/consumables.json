@@ -1,0 +1,16 @@
+{
+    "Ancient sword of Coriander": {
+        "description": "Heals 10 HP",
+        "icon": "potion",
+        "kind": "heal",
+        "amount": 10,
+        "message": "You are healed {} HP!"
+    },
+    "Ichor": {
+        "description": "Heals 100 HP",
+        "icon": "potion",
+        "kind": "heal",
+        "amount": 100,
+        "message": "You are healed {} HP!"
+    }
+}

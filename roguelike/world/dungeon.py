@@ -9,15 +9,18 @@ import math
 import random
 from typing import (
     cast,
+    Any,
     ClassVar,
     Dict,
     List,
     Optional,
     Sequence,
     Tuple,
+    Type,
     TYPE_CHECKING
 )
 
+import numpy as np
 import pygame as pg
 
 from roguelike.engine import (
@@ -26,9 +29,14 @@ from roguelike.engine import (
     inputs,
     sprite,
     text,
-    tween
+    tween,
+    utils
 )
-from roguelike.entities import entity
+from roguelike.entities import (
+    entity,
+    player
+)
+from roguelike.bag import consumables
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
@@ -48,6 +56,21 @@ class DungeonTile:
     special_render: bool = False
     offset_type: RandomAnimType = RandomAnimType.GLOBAL
     offset_power: float = 0
+
+tiles: Dict[str, DungeonTile] = {}
+
+def init_tiles() -> None:
+    """Called to initialize tiles from assets"""
+    tile_res = assets.residuals['tiles']
+    for name, value in tile_res.items():
+        tile_anim_name = cast(str, value['animation'])
+        tile_anim = assets.Animations.instance.animations[tile_anim_name]
+        tile_state = sprite.AnimationState(tile_anim)
+        passable = cast(bool, value.get('passable', True))
+        offset_type = RandomAnimType[cast(str, value.get('otype', 'GLOBAL'))]
+        offset = cast(float, value.get('opow', 0.0))
+        tile = DungeonTile(tile_state, passable, False, offset_type, offset)
+        tiles[name] = tile
 
 @dataclass
 class DungeonParticle:
@@ -77,6 +100,28 @@ class DungeonParticle:
                                   alignment=text.CENTER_CENTER)
         return active
 
+@dataclass
+class DungeonMapSpawner:
+    """Base from which to generate dungeon maps"""
+    size: Tuple[int, int]
+    tiles: Sequence[DungeonTile]
+    player_pos: Tuple[int, int]
+    tile_map: List[int] = field(default_factory=list)
+    vignette_color: Tuple[float, float, float, float] = (.3, .25, 4, 1)
+    spawns: Sequence[Tuple[Tuple[int, int], Type, Dict[str, Any]]] = ()
+    
+    def spawn_map(self):
+        dungeon_map = DungeonMap(self.size, self.tiles, self.vignette_color)
+        dungeon_map.tile_map = list(self.tile_map)
+        for pos, ent_cls, kwargs in self.spawns:
+            ent = ent_cls(dungeon_pos=list(pos), **kwargs)
+            dungeon_map.place_entity(ent)
+        dungeon_map.player =\
+            player.PlayerEntity(dungeon_pos=list(self.player_pos))
+        dungeon_map.player.inventory.give_item(consumables.items['Ancient sword of Coriander'], 7)
+        dungeon_map.player.inventory.give_item(consumables.items['Ichor'], 7)
+        return dungeon_map
+
 class DungeonMap:
     """A map of a dungeon
     
@@ -93,7 +138,7 @@ class DungeonMap:
                     (.3, .25, .4, 1)):
         self.size = size
         self.tiles = tiles
-        self.tile_map: Dict[Tuple[int, int], int] = defaultdict(lambda: -1)
+        self.tile_map: List[int] = []
         self.foreground: Dict[Tuple[int, int], int] =\
             defaultdict(lambda: -1)
         self.entities: Dict[Tuple[int, int], Optional[entity.Entity]] =\
@@ -119,44 +164,25 @@ class DungeonMap:
         the grid-based world. Distance increments by 1 at each step, and
         the entity can step in the 4 cardinal direction
         """
-        visited = {from_}
-        heap: List[Tuple[
-                         int,
-                         int,
-                         Tuple[int, int],
-                         Optional[Tuple[int, int]]]] =\
-            [(DungeonMap._manhattan_dist(from_, to), 0, from_, None)]
-        backtrack: Dict[Tuple[int, int], Tuple[int, int]] = {}
-        while heap:
-            cost, distance, pos, prev = heapq.heappop(heap)
-            x, y = pos
-            backtrack[(x, y)] = cast(Tuple[int, int], prev)
-            if (x, y) == to:
-                steps = [(x, y)]
-                while (x, y) != from_:
-                    x, y = backtrack[(x, y)]
-                    steps.append((x, y))
-                steps.reverse()
-                return steps
-            frontier = ((x+1,y),(x-1,y),(x,y+1),(x,y-1))
-            for each in frontier:
-                if each in visited:
-                    continue
-                if not self.is_free(each) and each != to:
-                    continue
-                visited.add(each)
-                if maxdist < 0 or distance + 1 <= maxdist:
-                    cost = distance + DungeonMap._manhattan_dist(each, to)
-                    heapq.heappush(heap, (cost, distance + 1, each, (x, y)))
-        return None
+        cost = []
+        for y in range(self.size[1]):
+            cost.append([1 if self.is_free((x, y)) or (x, y) == to\
+                     else float('inf') for x in range(self.size[0])])
+        return utils.a_star(np.array(cost),
+                            from_,
+                            to,
+                            None if maxdist < 0 else maxdist)
     
     def tile_at(self, pos: Tuple[int, int]) -> Optional[DungeonTile]:
-        if pos in self.tile_map:
-            index = self.tile_map[pos]
-            if index == -1:
-                return None
-            return self.tiles[index]
-        return None
+        if pos[0] < 0 or pos[0] >= self.size[0]:
+            return None
+        if pos[1] < 0 or pos[1] >= self.size[1]:
+            return None
+        pindex = pos[1] * self.size[0] + pos[0]
+        index = self.tile_map[pindex]
+        if index == -1:
+            return None
+        return self.tiles[index]
     
     def is_free(self, pos: Tuple[int, int]) -> bool:
         tile = self.tile_at(pos)
@@ -210,12 +236,18 @@ class DungeonMapState(gamestate.GameState):
     base_tile_size: ClassVar[float] = 64
 
     def __init__(self, *args, **kwargs):
-        self.dungeon_map = kwargs.pop('dungeon')
+        self.dungeon_map_spec = kwargs.pop('dungeon')
         self.tile_size = kwargs.pop('tile_size')
         super().__init__(*args, **kwargs)
         self.camera = tween.AnimatableMixin()
         self.particles: List[DungeonParticle] = []
         self.vignette_sprite = assets.Sprites.instance.vignette
+        self.blackout = 0.
+        self.respawn()
+    
+    def respawn(self):
+        self.dungeon_map = self.dungeon_map_spec.spawn_map()
+        self.blackout = 0.
     
     def render_gamestate(self,
                          delta_time: float,
@@ -249,32 +281,31 @@ class DungeonMapState(gamestate.GameState):
         stack_fbo.clear(0, 0, 0, 1)
         for y in range(start_tile_y, start_tile_y + num_tiles_y):
             for x in range(start_tile_x, start_tile_x + num_tiles_x):
-                if (x, y) in self.dungeon_map.tile_map:
-                    tile = self.dungeon_map.tile_at((x, y))
-                    if tile is not None:
-                        if tile.special_render:
-                            tile.render(delta_time,
-                                        renderer,
-                                        (x, y),
-                                        self.tile_size)
-                        else:
-                            dt = 0
-                            if tile.offset_type == RandomAnimType.X:
-                                dt += x * tile.offset_power
-                            elif tile.offset_type == RandomAnimType.Y:
-                                dt += y * tile.offset_power
-                            elif tile.offset_type == RandomAnimType.X_PLUS_Y:
-                                dt += (x + y) * tile.offset_power
-                            elif tile.offset_type == RandomAnimType.X_MINUS_Y:
-                                dt += (x - y) * tile.offset_power
-                            elif tile.offset_type == RandomAnimType.RANDOM:
-                                dt += random.random() * tile.offset_power
-                            tile.anim.render(renderer,
-                                             (x * self.tile_size - adj_x,
-                                              y * self.tile_size - adj_y),
-                                             (self.tile_size, self.tile_size),
-                                             0,
-                                             dt)
+                tile = self.dungeon_map.tile_at((x, y))
+                if tile is not None:
+                    if tile.special_render:
+                        tile.render(delta_time,
+                                    renderer,
+                                    (x, y),
+                                    self.tile_size)
+                    else:
+                        dt = 0
+                        if tile.offset_type == RandomAnimType.X:
+                            dt += x * tile.offset_power
+                        elif tile.offset_type == RandomAnimType.Y:
+                            dt += y * tile.offset_power
+                        elif tile.offset_type == RandomAnimType.X_PLUS_Y:
+                            dt += (x + y) * tile.offset_power
+                        elif tile.offset_type == RandomAnimType.X_MINUS_Y:
+                            dt += (x - y) * tile.offset_power
+                        elif tile.offset_type == RandomAnimType.RANDOM:
+                            dt += random.random() * tile.offset_power
+                        tile.anim.render(renderer,
+                                         (x * self.tile_size - adj_x,
+                                          y * self.tile_size - adj_y),
+                                         (self.tile_size, self.tile_size),
+                                         0,
+                                         dt)
         # Experimenal, bloom?
         # renderer.apply_bloom(5, 1, .7)
         # Nah
@@ -350,6 +381,18 @@ class DungeonMapState(gamestate.GameState):
                                       (self.tile_size // 4,) * 2,
                                       (0, 1, 0, 1),
                                       (self.base_text_scale,) * 2)
+        coin_str = f"Coins:{assets.variables['coins']}"
+        self.font.draw_str(coin_str,
+                           (self.tile_size * 8, self.tile_size // 4),
+                           (.8, .8, 0, 1),
+                           (self.base_text_scale,) * 2)
+        
+        if self.blackout > 0:
+            stack_fbo = renderer.push_fbo()
+            renderer.clear(0, 0, 0, self.blackout)
+            renderer.fbo_to_fbo(oldest_fbo, stack_fbo)
+            renderer.pop_fbo()
+            oldest_fbo.use()
     
     def update_gamestate(self, delta_time: float) -> bool:
         super().update_gamestate(delta_time)
@@ -399,9 +442,6 @@ class DungeonMapState(gamestate.GameState):
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:
-        # tex = renderer.load_texture('vignette.png')
-        # cls.vignette_sprite = sprite.Sprite(tex, (0, 0), tex.size)
         cls.font = renderer.get_font('Consolas', 64)
         cls.base_text_scale = cls.font.scale_to_bound(
             "O", (cls.base_tile_size,) * 2)
-        print(cls.base_text_scale)

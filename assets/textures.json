@@ -1,0 +1,29 @@
+{
+    "shadow": {
+        "source": "back_shadow.png",
+        "filter": 9728
+    },
+    "button": {
+        "source": "button_bg.png",
+        "filter": 9728
+    },
+    "consumables": {
+        "source": "consumables.png",
+        "filter": 9728
+    },
+    "effects": {
+        "source": "effects.png"
+    },
+    "player": {
+        "source": "player_debug.png"
+    },
+    "tile": {
+        "source": "tile.png"
+    },
+    "vignette": {
+        "source": "vignette.png"
+    },
+    "slow_chaser": {
+        "source": "monsters/slow_chaser.png"
+    }
+}

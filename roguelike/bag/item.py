@@ -145,4 +145,5 @@ class Inventory:
     def equipped(self, item: EquipableItem) -> bool:
         return self.equipment[item.equip_slot] is item
 
+items: Dict[str, BaseItem] = {}
     

@@ -20,6 +20,7 @@ from roguelike.bag import (
     inventory_state,
     item
 )
+from roguelike.states import game_over
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
@@ -33,13 +34,15 @@ class PlayerEntity(entity.FightingEntity):
     def __init__(self, *args, **kwargs):
         self.class_anim = assets.Animations.instance.player
         self.sqr_sprite = assets.Sprites.instance.highlight
-        super().__init__(*args, passable=False, max_hp=100, **kwargs)
+        super().__init__(*args, passable=False, max_hp=1, **kwargs)
         self.anim.speed = 0
         self.anim.direction = sprite.AnimDir.DOWN
         self.shaky_cam: List[int] = [0, 0]
         self.inventory = item.Inventory(owner=self)
         self.inv_state = inventory_state.InventoryBaseScreen(
             inventory=self.inventory)
+        if 'coins' not in assets.variables:
+            assets.variables['coins'] = 0
     
     walk_length: ClassVar[float] = .25
     
@@ -113,9 +116,11 @@ class PlayerEntity(entity.FightingEntity):
                 if target_ent.attackable:
                     target_ent = cast(entity.EnemyEntity, target_ent)
                     self.melee_attack(state, target_ent)
+                    return
                 elif target_ent.interactable:
-                    # TODO NPC interaction
-                    pass
+                    target_ent.interact(state, self)
+                    return
+        # Open inventory
         if state.inputstate.keys[pg.K_RETURN][inputs.KeyState.DOWN]:
             def _menu(state, event):
                 while state.locked():
@@ -190,7 +195,19 @@ class PlayerEntity(entity.FightingEntity):
         return True
         
     def entity_die(self, state):
-        pass
+        state.cancel_events()
+        def _event(_state, event):
+            while _state.locked():
+                yield True
+            # _state.manager.pop_state()
+            _state.manager.push_state(game_over.GameOverState())
+            yield False
+        anim = tween.Animation([
+            (0., tween.Tween(state, 'blackout', 0, 1, 1.5))
+        ])
+        anim.attach(state)
+        state.begin_animation(anim)
+        state.queue_event(event_manager.Event(_event))
     
     attack_length: ClassVar[float] = .25
     
@@ -239,43 +256,4 @@ class PlayerEntity(entity.FightingEntity):
             yield False
         state.queue_event(event_manager.Event(_event))
     
-    @classmethod
-    def init_sprites(cls, renderer: 'Renderer') -> None:
-        pass
-        # texture = renderer.load_texture('player_debug.png')
-        # down = sprite.Animation.from_atlas(texture, (64, 64), (
-            # (0, 0), (64, 0), (128, 0), (192, 0)
-        # ))
-        # up = sprite.Animation.from_atlas(texture, (64, 64), (
-            # (0, 64), (64, 64), (128, 64), (192, 64)
-        # ))
-        # left = sprite.Animation.from_atlas(texture, (64, 64), (
-            # (0, 128), (64, 128), (128, 128), (192, 128)
-        # ))
-        # right = sprite.Animation.from_atlas(texture, (-64, 64), (
-            # (63, 128), (127, 128), (191, 128), (255, 128)
-        # ))
-        # walking: Dict[sprite.AnimDir, Sequence[sprite.Sprite]] = {
-                # sprite.AnimDir.DOWN: down,
-                # sprite.AnimDir.UP: up,
-                # sprite.AnimDir.LEFT: left,
-                # sprite.AnimDir.RIGHT: right,
-                # sprite.AnimDir.DEFAULT: down
-            # }
-        # standing: Dict[sprite.AnimDir, Sequence[sprite.Sprite]] = {
-                # sprite.AnimDir.DOWN: down,
-                # sprite.AnimDir.UP: up,
-                # sprite.AnimDir.LEFT: left,
-                # sprite.AnimDir.RIGHT: right,
-                # sprite.AnimDir.DEFAULT: down
-            # }
-        # cls.class_anim = sprite.Animation({
-            # sprite.AnimState.DEFAULT: standing,
-            # sprite.AnimState.IDLE: standing,
-            # sprite.AnimState.WALK: walking,
-        # }, 12)
-        
-        # cls.sqr_sprite = sprite.Sprite(
-            # renderer.load_texture('effects.png'),
-            # (0, 0), (64, 64))
     

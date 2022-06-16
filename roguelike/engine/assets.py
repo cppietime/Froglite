@@ -1,3 +1,4 @@
+import collections
 import json
 import math
 import os
@@ -6,6 +7,7 @@ from typing import (
     cast,
     Any,
     Dict,
+    Iterable,
     List,
     Optional,
     Sequence,
@@ -26,7 +28,9 @@ def asset_path(base_path: str) -> str:
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
         baesdir = sys._MEIPASS # type: ignore
     else:
-        basedir = os.path.join(os.path.split(__file__)[0], os.pardir, os.pardir)
+        basedir = os.path.join(os.path.split(__file__)[0],
+                               os.pardir,
+                               os.pardir)
     return os.path.join(basedir, 'assets', base_path)
 
 class Textures:
@@ -36,6 +40,21 @@ class Textures:
     
     def __getattr__(self, name: str) -> mgl.Texture:
         return self.textures[name]
+    
+    @staticmethod
+    def load_textures(renderer: 'Renderer',
+                      source: Dict[str, Dict[str, str]]) -> None:
+        Textures.instance = Textures()
+        for key, value in source.items():
+            tex_name = value.pop("source")
+            other_params: Dict[str, Any] = {}
+            for p_key, p_value in value.items():
+                if p_key == 'filter':
+                    other_params[p_key] = p_value, p_value
+                elif p_key in ['repeat_x', 'repeat_y']:
+                    other_params[p_key] = p_value
+            Textures.instance.textures[key] =\
+                renderer.load_texture(tex_name, **other_params)
 
 class Sprites:
     instance: 'Sprites'
@@ -95,6 +114,33 @@ class Sprites:
     def __getattr__(self, name: str) -> sprite.Sprite:
         return self.sprites[name]
 
+    @staticmethod
+    def load_sprites(source: Dict[str, Dict[str, Any]]) -> None:
+        Sprites.instance = Sprites()
+        for name, big_dict in source.items():
+            many = cast(bool, big_dict.get('many', False))
+            tex_name = cast(str, big_dict['texture'])
+            if many:
+                offsets = cast(Sequence[Tuple[int, int]], big_dict['offsets'])
+                sizes = cast(Sequence[Tuple[int, int]], big_dict['sizes'])
+                colors = cast(Sequence[Tuple[float, float, float, float]],
+                              big_dict.get('colors', ((1, 1, 1, 1),)))
+                angles = cast(Sequence[float], big_dict.get('angles', (0,)))
+                Sprites.instance.sprites_of_size(
+                    tex_name, (name,), offsets, sizes, colors, angles)
+            else:
+                offset = cast(Tuple[int, int],
+                              tuple(big_dict.get('offset', (0, 0))))
+                size = cast(Optional[Tuple[int, int]],
+                            big_dict.get('size', None))
+                if size is not None:
+                    size = cast(Tuple[int, int], tuple(size))
+                color = cast(Tuple[float, float, float, float],
+                             tuple(big_dict.get('color', (1, 1, 1, 1))))
+                angle = cast(float, big_dict.get('angle', 0))
+                Sprites.instance.one_sprite(
+                    tex_name, name, offset, size, color, angle)
+
 _AnimState_In = Dict[str, Dict[str, Sequence[str]]]
 _AnimDir = List[sprite.Sprite]
 _AnimState = Dict[sprite.AnimDir, Sequence[sprite.Sprite]]
@@ -126,62 +172,32 @@ class Animations:
     
     def __getattr__(self, name: str) -> sprite.Animation:
         return self.animations[name]
-                
+    
+    @staticmethod
+    def load_animations(source: Dict[str, Dict[str, Any]]) -> None:
+        Animations.instance = Animations()
+        for name, value in source.items():
+            speed = cast(float, value['speed'])
+            anim_in = cast(Dict[str, _AnimState_In], value['animation'])
+            Animations.instance.animation(name, anim_in, speed)
 
-def load_textures(renderer: 'Renderer', source: Dict[str, Dict[str, str]]) -> None:
-    Textures.instance = Textures()
-    for key, value in source.items():
-        tex_name = value.pop("source")
-        other_params: Dict[str, Any] = {}
-        for p_key, p_value in value.items():
-            if p_key == 'filter':
-                other_params[p_key] = p_value, p_value
-            elif p_key in ['repeat_x', 'repeat_y']:
-                other_params[p_key] = p_value
-        Textures.instance.textures[key] =\
-            renderer.load_texture(tex_name, **other_params)
-
-def load_sprites(source: Dict[str, Dict[str, Any]]) -> None:
-    Sprites.instance = Sprites()
-    for name, big_dict in source.items():
-        many = cast(bool, big_dict.get('many', False))
-        tex_name = cast(str, big_dict['texture'])
-        if many:
-            offsets = cast(Sequence[Tuple[int, int]], big_dict['offsets'])
-            sizes = cast(Sequence[Tuple[int, int]], big_dict['sizes'])
-            colors = cast(Sequence[Tuple[float, float, float, float]],
-                          big_dict.get('colors', ((1, 1, 1, 1),)))
-            angles = cast(Sequence[float], big_dict.get('angles', (0,)))
-            Sprites.instance.sprites_of_size(
-                tex_name, (name,), offsets, sizes, colors, angles)
-        else:
-            offset = cast(Tuple[int, int],
-                          tuple(big_dict.get('offset', (0, 0))))
-            size = cast(Optional[Tuple[int, int]],
-                        big_dict.get('size', None))
-            if size is not None:
-                size = cast(Tuple[int, int], tuple(size))
-            color = cast(Tuple[float, float, float, float],
-                         tuple(big_dict.get('color', (1, 1, 1, 1))))
-            angle = cast(float, big_dict.get('angle', 0))
-            Sprites.instance.one_sprite(
-                tex_name, name, offset, size, color, angle)
-
-def load_animations(source: Dict[str, Dict[str, Any]]) -> None:
-    Animations.instance = Animations()
-    for name, value in source.items():
-        speed = cast(float, value['speed'])
-        anim_in = cast(Dict[str, _AnimState_In], value['animation'])
-        Animations.instance.animation(name, anim_in, speed)
-
-residuals: Dict[str, Any]
+residuals: Dict[str, Any] = {}
+variables: Dict[str, Any] = collections.defaultdict(lambda: None)
 
 def load_assets(renderer: 'Renderer', source: str) -> None:
     global residuals
     with open(asset_path(source)) as file:
-        tdata: Dict[str, Dict[str, str]] = json.load(file) # Texture names to file names mappings
-    load_textures(renderer, cast(Dict[str, Dict[str, str]], tdata.pop('textures')))
-    load_sprites(cast(Dict[str, Dict[str, Any]], tdata.pop('sprites')))
-    load_animations(cast(Dict[str, Any], tdata.pop('animations')))
-    residuals = tdata
+        tdata: Dict[str, Any] = json.load(file)
+    file_list = cast(List[str], tdata['files'])
+    for filename in file_list:
+        with open(asset_path(filename+'.json')) as file:
+            fdata: Dict[str, Any] = json.load(file)
+        residuals[filename] = fdata
+    Textures.load_textures(renderer,
+                           cast(Dict[str, Dict[str, str]],
+                           residuals.pop('textures')))
+    Sprites.load_sprites(cast(Dict[str, Dict[str, Any]],
+                         residuals.pop('sprites')))
+    Animations.load_animations(cast(Dict[str, Any], residuals.pop('animations')))
+    # residuals = tdata
     

@@ -224,9 +224,13 @@ class CharBank:
     def fontCharBank(typeface: str,
                      renderer: 'Renderer',
                      antialiasing:bool=True,
-                     size:int=64) -> 'CharBank':
+                     size:int=64,
+                     bold:bool=False,
+                     italic:bool=False) -> 'CharBank':
         glyph_surfaces = {}
         font = pg.font.SysFont(typeface, size)
+        font.bold = bold
+        font.italic = italic
         sum_w, max_h = 0, 0
         for ch in range(32, 127):
             surf = font.render(chr(ch), antialiasing, (255, 255, 255))\

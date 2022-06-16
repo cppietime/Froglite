@@ -1,0 +1,139 @@
+{
+    "test_chat": {
+        "message": "Hello stranger",
+        "icon": "potion",
+        "choices": ["Give me money", "I wanna buy", "I wanna sell back"],
+        "next": [
+        {
+            "name": "give_money",
+            "predicate": {
+                "kind": "choice",
+                "num": 0
+            }
+        },
+        {
+            "name": "buy",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 1
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 3,
+                    "function": ">="
+                }
+                ]
+            }
+        },
+        {
+            "name": "fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 1
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 3,
+                    "function": "<"
+                }
+                ]
+            }
+        },
+        {
+            "name": "sell",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 2
+                },
+                {
+                    "kind": "has_item",
+                    "item": "Ichor",
+                    "value": 1
+                }
+                ]
+            }
+        },
+        {
+            "name": "fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 2
+                },
+                {
+                    "kind": "not",
+                    "predicate": {
+                        "kind": "has_item",
+                        "item": "Ichor",
+                        "value": 1
+                    }
+                }
+                ]
+            }
+        }
+        ]
+    },
+    "give_money": {
+        "message": "Have some cash bruh",
+        "icon": "potion",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 5,
+            "function": "+"
+        }
+        ]
+    },
+    "fail": {
+        "message": "Get outta here broke ass man.",
+        "icon": "potion"
+    },
+    "buy": {
+        "message": "Hehe... have an Ichor bruh...",
+        "icon": "potion",
+        "actions": [
+        {
+            "kind": "give",
+            "item": "Ichor",
+            "amount": 1
+        },
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 3,
+            "function": "-"
+        }
+        ]
+    },
+    "sell": {
+        "message": "I'll buy it back",
+        "icon": "potion",
+        "actions": [
+        {
+            "kind": "take",
+            "item": "Ichor",
+            "amount": 1
+        },
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 3,
+            "function": "+"
+        }
+        ]
+    }
+}

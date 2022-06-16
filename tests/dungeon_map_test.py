@@ -1,6 +1,9 @@
 import dataclasses
+import random
+import threading
 
 import moderngl as mgl # type: ignore
+import numpy as np
 import pygame as pg
 
 from roguelike import settings
@@ -9,24 +12,51 @@ from roguelike.engine import (
     gamestate,
     renderer,
     sprite,
-    inputs
+    inputs,
+    utils
 )
-from roguelike.states import dungeon
+from roguelike.states import (
+    ui,
+    game_over
+)
 from roguelike.entities import (
     entity,
     player,
-    slow_chaser
+    slow_chaser,
+    npc
 )
 from roguelike.bag import (
     consumables,
     inventory_state
 )
+from roguelike.world import (
+    dungeon,
+    wfc
+)
+map_size = (36, 36)
+pat_size = (4, 4)
+use_jit = False
+tile_floor = 0
+tile_wall = 1
+tile_clear = 0
+
+samp_size, samp_arr = utils.load_grid('map_sample.png')
+meta_map = [0, 1]
+samp_arr = samp_arr.reshape(samp_size[::-1])
+f, b, ids, adjs = wfc.find_adjacencies(samp_size, samp_arr, pat_size, True)
+# print(samp_arr.reshape(samp_size[::-1]))
+# print(f)
+# print(np.array(ids).reshape(samp_size[::-1]))
+# print(adjs)
+gen = wfc.WaveFunction([set(f.values()),
+                        wfc.patterns_containing({1}, b),
+                        wfc.patterns_containing({0}, b)], adjs, pat_size)
 
 # Initialize context and screen
 pg.init()
 screen = pg.display.set_mode(settings.SCREEN_SIZE, pg.DOUBLEBUF | pg.OPENGL)
 gl_ctx = mgl.create_context(require=330)
-rend = renderer.Renderer(gl_ctx)
+rend = renderer.Renderer(gl_ctx, screen_size=(1440, 1080))
 inputstate = inputs.InputState()
 manager = gamestate.GameStateManager(inputstate=inputstate)
 
@@ -38,51 +68,71 @@ entity.Entity.base_size = tile_size
 
 # Initialize assets
 dungeon.DungeonMapState.init_sprites(rend)
-player.PlayerEntity.init_sprites(rend)
-slow_chaser.SlowChaserEntity.init_sprites(rend)
 entity.EnemyEntity.hp_font = dungeon.DungeonMapState.font
-# tex = rend.load_texture('button_bg.png', filter=(mgl.NEAREST, mgl.NEAREST))
-# spr = sprite.Sprite(tex, (0, 0), tex.size)
-# inventory_state.InventoryBaseScreen.active_button_bg = spr
-# inventory_state.InventoryBaseScreen.inactive_button_bg = dataclasses.replace(spr)
-# inventory_state.InventoryBaseScreen.inactive_button_bg.color = (.5, .5, .5, .9)
-inventory_state.InventoryBaseScreen.set_font(rend.get_font('Consolas', 64))
+ui.default_font = rend.get_font('Consolas', 64, antialiasing=False, bold=False)
 inventory_state.InventoryBaseScreen.init_globs()
-# bd = rend.load_texture('back_shadow.png', filter=(mgl.NEAREST, mgl.NEAREST))
-# bd_anim = sprite.Animation.from_atlas(bd, (32, 32), ((32, 32),))
-# entity.Entity.particle_backdrop = sprite.Animation({
-    # sprite.AnimState.DEFAULT: {sprite.AnimDir.DEFAULT: bd_anim}
-# }, 1)
+game_over.GameOverState.init_resources()
 entity.Entity.particle_backdrop = assets.Animations.instance.shadow
 
-# tile_tex = rend.load_texture('tile.png', filter=(mgl.NEAREST, mgl.NEAREST))
-# tile_spr = sprite.Sprite(tile_tex, (0, 0), tile_tex.size, color=(1, 1, 0, 1))
-# tile_spr2 = sprite.Sprite(tile_tex, (0, 0), (-tile_tex.size[0], -tile_tex.size[1]), color=(1, 0, 1, 1))
-# tile_spr3 = sprite.Sprite(tile_tex, (0, 0), (-tile_tex.size[0], tile_tex.size[1]), color=(0, .5, .5, 1))
-# tile_spr4 = sprite.Sprite(tile_tex, (0, 0), (tile_tex.size[0], -tile_tex.size[1]), color=(.8, .2, .2, 1))
-# tile_anim = sprite.Animation({sprite.AnimState.DEFAULT: {sprite.AnimDir.DEFAULT: [tile_spr, tile_spr2, tile_spr3, tile_spr4]}}, 1.0)
-tile_anims = sprite.AnimationState(assets.Animations.instance.tile)
-tile = dungeon.DungeonTile(tile_anims, True, offset_type = dungeon.RandomAnimType.X_MINUS_Y, offset_power = 0.25)
+# tile_anims = sprite.AnimationState(assets.Animations.instance.tile)
+# wall_anims = sprite.AnimationState(assets.Animations.instance.wall)
+# tile = dungeon.DungeonTile(tile_anims, True, offset_type = dungeon.RandomAnimType.X_MINUS_Y, offset_power = 0.25)
+# wall = dungeon.DungeonTile(wall_anims, False)
+dungeon.init_tiles()
 
 consumables.init_items()
+npc.init_chats()
 
 # Setup dungeon map
-dungeon_map = dungeon.DungeonMap((100, 100), [tile], vignette_color=(.2, .2, .2, 1))
-for y in range(100):
-    for x in range(100):
-        dungeon_map.tile_map[(x, y)] = 0
-player_ent = player.PlayerEntity(dungeon_pos=[20, 20])
-dungeon_map.player = player_ent
-player_ent.inventory.give_item(consumables.items['Potion'], 10)
-player_ent.inventory.give_item(consumables.items['Ichor'], 10)
+ceiling = [tile_wall] * map_size[0]
+space = [tile_wall] + [tile_floor] * (map_size[0] - 2) + [tile_wall]
+map_classes = ceiling + space * ((map_size[1] - 2) // 1) + ceiling
+map_classes[map_size[0] + 2] = tile_clear
+map_classes[map_size[0] * 2 - 2] = tile_clear
+map_classes[map_size[0] * (map_size[1] - 2) + 2] = tile_clear
+map_classes[map_size[0] * (map_size[1] - 1) - 2] = tile_clear
+print(len(ceiling), len(space), len(map_classes))
 
-chaser = slow_chaser.SlowChaserEntity(dungeon_pos=[17, 17])
-chaser2 = slow_chaser.SlowChaserEntity(dungeon_pos=[17, 20])
-dungeon_map.place_entity(chaser)
-dungeon_map.place_entity(chaser2)
+dungeon_map = dungeon.DungeonMapSpawner(map_size, [dungeon.tiles['floor'], dungeon.tiles['wall']], (20, 20), vignette_color=(.2, .2, .2, 1), spawns=[
+    ((17, 17), slow_chaser.PursuantEnemy, {'anim': assets.Animations.instance.slow_chaser, 'action_cost': 1.5}),
+    ((17, 20), slow_chaser.PursuantEnemy, {'anim': assets.Animations.instance.slow_chaser, 'action_cost': 2}),
+    # ((20, 17), npc.NPCEntity, {'anim': assets.Animations.instance.player, 'chat': npc.chats['test_chat']})
+])
 
-state = dungeon.DungeonMapState(dungeon=dungeon_map, tile_size=tile_size)
-manager.push_state(state)
+# Generate the map multi-threadedly
+def _thread():
+    grid = gen.wfc_tile(map_size, map_classes, use_jit=use_jit)
+    for y in range(map_size[1]):
+        for x in range(map_size[0]):
+            xy = y * map_size[0] + x
+            pattern = grid[xy]
+            choice = b[pattern][0, 0]
+            dungeon_map.tile_map.append(meta_map[choice])
+            # dungeon_map.tile_map.append(map_classes[xy])
+    groups = utils.group(map_size, [t == 0 for t in dungeon_map.tile_map])
+    player_group = max(enumerate(groups), key=lambda x: len(x[1]))[0]
+    dungeon_map.player_pos = random.choice(list(groups[player_group]))
+    for i, group in enumerate(groups):
+        if i == player_group:
+            continue
+        for pos in group:
+            xy = pos[1] * map_size[0] + pos[0]
+            dungeon_map.tile_map[xy] = 1
+    tile_map = np.asanyarray(dungeon_map.tile_map, dtype=float)\
+        .reshape(map_size[::-1])
+    tile_map[tile_map == 1.] = float('inf')
+    tile_map[tile_map == 0.] = 1
+    djikstra = utils.populate_djikstra(tile_map, (dungeon_map.player_pos,))
+    djikstra = utils.clear_blockage(djikstra)
+    pos = np.where(np.isinf(djikstra), -np.inf, djikstra).argmax()
+    y, x = divmod(pos, map_size[0])
+    print((x, y))
+    dungeon_map.spawns.append(((x, y), npc.NPCEntity, {'anim': assets.Animations.instance.player, 'chat': npc.chats['test_chat']}))
+
+    state = dungeon.DungeonMapState(dungeon=dungeon_map, tile_size=tile_size)
+    manager.push_state(state)
+thread = threading.Thread(target=_thread)
+thread.start()
 
 clock = pg.time.Clock()
 running=True
@@ -118,6 +168,8 @@ while running:
     old.use()
     rend.clear(0, 0, 0, 0)
     
+    base_fbo = rend.push_fbo(tex_params={'filter': (mgl.NEAREST, mgl.NEAREST)})
+    
     if render_mode:
         new = rend.push_fbo()
     
@@ -126,14 +178,15 @@ while running:
     
     if render_mode:
         rend.apply_bloom(2, 1, threshold=.9)
-        rend.apply_exposure(old, gamma=gamma, exposure=exposure)
-    # rend.fbo_to_fbo(old, new)
+        rend.apply_exposure(base_fbo, gamma=gamma, exposure=exposure)
         rend.pop_fbo()
-    old.use()
-    # rend.screen.use()
     
-    if not manager.any_states_active():
-        running = False
+    rend.fbo_to_fbo(old, base_fbo)
+    rend.pop_fbo()
+    old.use()
+    
+    # if not manager.any_states_active():
+        # running = False
     
     pg.display.flip()
     delta_time = clock.tick(144) / 1000

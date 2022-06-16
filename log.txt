@@ -7,17 +7,18 @@ Menu framework
 Pathfinding enemies (a-star)
 Combat animation and damage dealing
 Gfx effects (vignette, exposure)
+Configurable parameters (lazy resources?)
+Menu gfx design
+Game over state
 
 In progress:
-Menu gfx design
-Configurable parameters (lazy resources?)
+Changing resolution
+Speaking NPCs
 
 Ongoing long term:
 Asset creation
 
 To-do soon:
-Game over state
-Speaking NPCs
 Overworld items
 Drop items
 Spells
@@ -26,11 +27,11 @@ To-do long term:
 Enrich combat
 Shops
 World generation
+Scaling borders
 Global flags
 Sound
 Save/load
 
 Stretch goal:
-Changing resolution
 Remap input
 Toss/sell/buy N amount screen state

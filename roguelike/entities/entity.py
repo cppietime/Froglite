@@ -24,7 +24,7 @@ from roguelike.engine import (
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
-    from roguelike.states.dungeon import DungeonMapState
+    from roguelike.world.dungeon import DungeonMapState
 
 @dataclass
 class Entity:
@@ -178,9 +178,9 @@ class Entity:
                           blocking)
     
     pain_particle_y: ClassVar[float] = 1 / 4
-    pain_particle_w: ClassVar[float] = 12
+    pain_particle_w: ClassVar[float] = 18
     pain_particle_h: ClassVar[float] = 1 / 2
-    pain_particle_v: ClassVar[float] = 50
+    pain_particle_v: ClassVar[float] = 75
         
     def pain_particle(self,
                       state: gamestate.GameState,
@@ -216,6 +216,8 @@ class FightingEntity(Entity):
     def __init__(self, *args, **kwargs):
         self.max_hp: int = kwargs.pop('max_hp')
         self.hp = self.max_hp
+        self.attack_stat: float = kwargs.pop('attack', 1.)
+        self.defense_stat: float = kwargs.pop('defense', 1.)
         super().__init__(*args, **kwargs)
     
     def get_hit(self,
@@ -266,6 +268,8 @@ class FightingEntity(Entity):
                                      sprite.AnimState.IDLE,
                                      0,
                                      interpolation=tween.bounce(1))
+            while state.locked():
+                yield True
             target.get_hit(_state, self, damage)
             yield not _state.locked()
         state.queue_event(event_manager.Event(_script))
@@ -409,12 +413,3 @@ class EnemyEntity(ActingEntity):
                                         (self.rect.w,
                                          self.rect.h * self.hp_bar_h),
                                         self.hp_bar_color)
-        
-
-class NPCEntity(Entity):
-    """Base class for entities that give dialog
-    """
-    interactable = True
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)

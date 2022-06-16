@@ -12,24 +12,32 @@ from roguelike.engine import (
     tween
 )
 
-from roguelike.entities import entity
+from roguelike.entities import (
+    entity,
+    npc
+)
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
     from roguelike.engine.gamestate import GameState
-    from roguelike.states.dungeon import DungeonMapState
+    from roguelike.world.dungeon import DungeonMapState
 
-class SlowChaserEntity(entity.EnemyEntity):
+class PursuantEnemy(entity.EnemyEntity):
     """Slowly chases after the player"""
-    name = 'Slow Chaser'
-    detection_radius = 5
+    # name = 'Slow Chaser'
+    # detection_radius = 5
     
     def __init__(self, *args, **kwargs):
-        self.class_anim = assets.Animations.instance.slow_chaser
+        # self.class_anim = assets.Animations.instance.slow_chaser
+        self.class_anim = kwargs.pop('anim', None)
+        self.name = kwargs.pop('name', 'Pursuant')
+        self.detection_radius = kwargs.pop('detection_radius', 5)
+        action_cost = kwargs.pop('action_cost', 1)
+        max_hp = kwargs.pop('max_hp', 16)
         super().__init__(*args,
                          passable=False,
-                         action_cost=2,
-                         max_hp=16,
+                         action_cost=action_cost,
+                         max_hp=max_hp,
                          **kwargs)
         self.anim.speed = 0
     
@@ -62,25 +70,12 @@ class SlowChaserEntity(entity.EnemyEntity):
                       state: 'GameState',
                       player_pos: Tuple[int, int]) -> None:
         super().chase_player(state, player_pos, -1)
-    
-    @classmethod
-    def init_sprites(cls, renderer: 'Renderer') -> None:
-        pass
-        # texture = renderer.load_texture('monsters/slow_chaser.png')
-        # seq = sprite.Animation.from_atlas(texture, (64, 64), ((0, 0),
-                                                              # (0, 0),
-                                                              # (0, 0),
-                                                              # (0, 0)))
-        # for i, spr in enumerate(seq):
-            # spr.angle = -i * math.pi / 2
-        # cls.class_anim = sprite.Animation({
-            # sprite.AnimState.DEFAULT: {
-                # sprite.AnimDir.DEFAULT: seq
-            # },
-            # sprite.AnimState.WALK: {
-                # sprite.AnimDir.DEFAULT: seq
-            # },
-            # sprite.AnimState.ATTACK: {
-                # sprite.AnimDir.DEFAULT: seq
-            # }
-        # }, 6)
+
+class NiceSlowChaser(npc.NPCEntity):
+    attackable=False
+    actionable=False
+    def __init__(self, *args, **kwargs):
+        # initial_prompt = npc.ChatPrompt('PeepeePoopoo', ('Fard', 'Shid', 'Cum', 'Quat', 'Dicke', 'Balls'))
+        initial_prompt = npc.chats['test_chat']
+        self.class_anim = assets.Animations.instance.player
+        super().__init__(*args, chat=initial_prompt, **kwargs)

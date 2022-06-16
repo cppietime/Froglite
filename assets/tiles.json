@@ -1,0 +1,12 @@
+{
+    "floor": {
+        "animation": "tile",
+        "passable": true,
+        "otype": "X_MINUS_Y",
+        "opow": 0.25
+    },
+    "wall": {
+        "animation": "wall",
+        "passable": false
+    }
+}
