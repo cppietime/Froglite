@@ -31,26 +31,26 @@ from roguelike.bag import (
 )
 from roguelike.world import (
     dungeon,
-    wfc
+    wfc,
+    world_gen
 )
-map_size = (36, 36)
+map_size = (20, 20)
 pat_size = (4, 4)
 use_jit = False
+use_weights = True
 tile_floor = 0
 tile_wall = 1
 tile_clear = 0
-
-samp_size, samp_arr = utils.load_grid('map_sample.png')
 meta_map = [0, 1]
+
+use_weights &= not use_jit
+samp_size, samp_arr = utils.load_grid('map_sample.png')
 samp_arr = samp_arr.reshape(samp_size[::-1])
-f, b, ids, adjs = wfc.find_adjacencies(samp_size, samp_arr, pat_size, True)
+f, b, ids, adjs, wts = wfc.find_adjacencies(samp_size, samp_arr, pat_size, True)
 # print(samp_arr.reshape(samp_size[::-1]))
 # print(f)
 # print(np.array(ids).reshape(samp_size[::-1]))
 # print(adjs)
-gen = wfc.WaveFunction([set(f.values()),
-                        wfc.patterns_containing({1}, b),
-                        wfc.patterns_containing({0}, b)], adjs, pat_size)
 
 # Initialize context and screen
 pg.init()
@@ -61,6 +61,7 @@ inputstate = inputs.InputState()
 manager = gamestate.GameStateManager(inputstate=inputstate)
 
 assets.load_assets(rend, "assets.json")
+assets.variables['world_gen'] = 'mainworld'
 
 # Set settings
 tile_size = settings.BASE_TILE_SIZE
@@ -73,17 +74,26 @@ ui.default_font = rend.get_font('Consolas', 64, antialiasing=False, bold=False)
 inventory_state.InventoryBaseScreen.init_globs()
 game_over.GameOverState.init_resources()
 entity.Entity.particle_backdrop = assets.Animations.instance.shadow
+dungeon.init_tiles()
+world_gen.init_generators()
 
 # tile_anims = sprite.AnimationState(assets.Animations.instance.tile)
 # wall_anims = sprite.AnimationState(assets.Animations.instance.wall)
 # tile = dungeon.DungeonTile(tile_anims, True, offset_type = dungeon.RandomAnimType.X_MINUS_Y, offset_power = 0.25)
 # wall = dungeon.DungeonTile(wall_anims, False)
-dungeon.init_tiles()
 
 consumables.init_items()
 npc.init_chats()
 
 # Setup dungeon map
+# gen = wfc.WaveFunction([set(f.values()),
+                        # wfc.patterns_containing({1}, b),
+                        # wfc.patterns_containing({0}, b)], adjs, pat_size, wts)
+
+# wave_gen_class = world_gen.WallGeneratorWFC(samp_size, samp_arr, pat_size, meta_map, {1})
+# gener = world_gen.WorldGenerator(wave_gen_class, [], world_gen.TileGeneratorPassThru(), [dungeon.tiles['floor'], dungeon.tiles['wall']], border=1)
+gener = world_gen.world_generators['mainworld']
+
 ceiling = [tile_wall] * map_size[0]
 space = [tile_wall] + [tile_floor] * (map_size[0] - 2) + [tile_wall]
 map_classes = ceiling + space * ((map_size[1] - 2) // 1) + ceiling
@@ -100,8 +110,8 @@ dungeon_map = dungeon.DungeonMapSpawner(map_size, [dungeon.tiles['floor'], dunge
 ])
 
 # Generate the map multi-threadedly
-def _thread():
-    grid = gen.wfc_tile(map_size, map_classes, use_jit=use_jit)
+def _thread_old():
+    grid = gen.wfc_tile(map_size, map_classes, use_jit=use_jit, use_weights=use_weights)
     for y in range(map_size[1]):
         for x in range(map_size[0]):
             xy = y * map_size[0] + x
@@ -109,6 +119,9 @@ def _thread():
             choice = b[pattern][0, 0]
             dungeon_map.tile_map.append(meta_map[choice])
             # dungeon_map.tile_map.append(map_classes[xy])
+    np.set_printoptions(threshold=10000)
+    map_arr = np.array(dungeon_map.tile_map).reshape(map_size[::-1])
+    utils.save_grid(map_arr, f'level_{pat_size[0]}x{pat_size[1]}_{use_weights}.png')
     groups = utils.group(map_size, [t == 0 for t in dungeon_map.tile_map])
     player_group = max(enumerate(groups), key=lambda x: len(x[1]))[0]
     dungeon_map.player_pos = random.choice(list(groups[player_group]))
@@ -123,13 +136,17 @@ def _thread():
     tile_map[tile_map == 1.] = float('inf')
     tile_map[tile_map == 0.] = 1
     djikstra = utils.populate_djikstra(tile_map, (dungeon_map.player_pos,))
-    djikstra = utils.clear_blockage(djikstra)
-    pos = np.where(np.isinf(djikstra), -np.inf, djikstra).argmax()
+    blocking = utils.clear_blockage(djikstra)
+    pos = np.where(np.isinf(djikstra) | blocking, -np.inf, djikstra).argmax()
     y, x = divmod(pos, map_size[0])
     print((x, y))
     dungeon_map.spawns.append(((x, y), npc.NPCEntity, {'anim': assets.Animations.instance.player, 'chat': npc.chats['test_chat']}))
 
     state = dungeon.DungeonMapState(dungeon=dungeon_map, tile_size=tile_size)
+    manager.push_state(state)
+def _thread():
+    dmap = gener.generate_world(map_size)
+    state = dungeon.DungeonMapState(dungeon=dmap, tile_size=tile_size)
     manager.push_state(state)
 thread = threading.Thread(target=_thread)
 thread.start()

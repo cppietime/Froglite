@@ -11,6 +11,7 @@ import random
 import time
 from typing import (
     Any,
+    Collection,
     Dict,
     Generator,
     List,
@@ -34,7 +35,7 @@ TileState = Set[int]
 TileRule = Sequence[TileState]
 OffsetRule = Sequence[TileState]
 History = Tuple[int, TileState, bool] # Position and previous valid states
-Pattern = npt.NDArray[np.int64]
+Pattern = npt.NDArray[np.int32]
 PKey = bytes
 
 def pattern_at(size: Pos,
@@ -88,8 +89,8 @@ def reflect_list_lr(width: int, height: int, lst: List[int]) -> List[int]:
             lst[xy0], lst[xy1] = lst[xy1], lst[xy0]
     return lst
 
-def rotated(size: Pos, data: npt.NDArray[np.int64], num_rotations: int) ->\
-        Generator[Tuple[Pos, npt.NDArray[np.int64]], None, None]:
+def rotated(size: Pos, data: npt.NDArray[np.int32], num_rotations: int) ->\
+        Generator[Tuple[Pos, npt.NDArray[np.int32]], None, None]:
     yield (size, data)
     ctr = 0
     while ctr < num_rotations:
@@ -124,19 +125,21 @@ def valid_overlap(left: Pattern, right: Pattern, offset: Pos) -> bool:
     pass
 
 def find_adjacencies(size: Pos,
-                     data: npt.NDArray[np.int64],
+                     data: npt.NDArray[np.int32],
                      pattern_size: Pos,
                      cyclic: bool = False,
                      num_rotations: int = 7) -> Tuple[Dict[PKey, int],
                                                       List[Pattern],
                                                       List[int],
-                                                      List[List[TileState]]]:
+                                                      List[List[TileState]],
+                                                      npt.NDArray[np.int32]]:
     """Break apart provided data into patterns of a specified size
     Performs no rotations/reflections
     Returns (Pattern to ID map,
              ID to Pattern map,
              Pattern ID list,
-             Adjacency rule list)
+             Adjacency rule list,
+             Count of each pattern)
     
     TODO this function is not working how I really want it to
     I need to check valid overlaps instead of just positioning of patterns
@@ -149,6 +152,7 @@ def find_adjacencies(size: Pos,
     patterns: List[Pattern] = []
     ids_at: List[int] = []
     array = np.asanyarray(data, dtype=int).reshape(size[::-1])
+    counts_list: List[int] = []
     
     # Determine all offsets used
     offsets: List[Pos] = gen_offsets(pattern_size)
@@ -176,6 +180,7 @@ def find_adjacencies(size: Pos,
                     patterns.append(pattern)
                     pattern_num = pattern_ids[pattern_key] = len(pattern_ids)
                     ids_at.append(pattern_num)
+                    counts_list.append(1)
                     for adj_off in adjacencies:
                         adj_off.append(set())
                     for i, offset in enumerate(offsets):
@@ -186,7 +191,9 @@ def find_adjacencies(size: Pos,
                             .setdefault(segkey, set())\
                             .add(pattern_num)
                 else:
-                    ids_at.append(pattern_ids[pattern_key])
+                    pattern_num = pattern_ids[pattern_key]
+                    ids_at.append(pattern_num)
+                    counts_list[pattern_num] += 1
         
     # Identify adjacencies
     for pattern_i, pattern in enumerate(patterns):
@@ -212,9 +219,13 @@ def find_adjacencies(size: Pos,
                     # adj_pattern_id = ids_at[xy]
                     # adjacencies[offset_i][pattern_id].add(adj_pattern_id)
     
-    return (pattern_ids, patterns, ids_at, adjacencies)
+    return (pattern_ids,
+            patterns,
+            ids_at,
+            adjacencies,
+            np.array(counts_list, dtype=np.int32))
 
-def patterns_containing(tiles: TileState,
+def patterns_containing(tiles: Collection[int],
                         patterns: List[Pattern]) -> TileState:
     """Returns a set of which patterns correspond to any of the provided
     tiles
@@ -222,15 +233,24 @@ def patterns_containing(tiles: TileState,
     return set(filter(lambda i: patterns[i][0, 0] in tiles,
                       range(len(patterns))))
 
-@numba.njit(numba.int64[:](numba.int64[:], numba.types.ListType(numba.types.List(numba.int64, reflected=True)), numba.types.ListType(numba.types.List(numba.int64)), numba.int64[:], numba.int64[:, :]), debug=True)
-def _fast_wfc_tile(pat_size, adj_list_lst, states_lst, size, offsets):
+@numba.njit(numba.int32[:](numba.int32[:],
+                           numba.types.ListType(
+                               numba.types.ListType(numba.int32)),
+                           numba.types.ListType(
+                               numba.types.ListType(numba.int32)),
+                           numba.int32[:],
+                           numba.int32[:, :],
+                           numba.int32[:]), debug=True)
+def _fast_wfc_tile(pat_size, adj_list_lst, states_lst, size, offsets, weights):
     """Probably won't even use this because it appears to be slower somehow"""
-    history = [(numba.int64(0), {numba.int64(0)}, numba.bool_(False)) for _ in range(0)]
+    history = [(numba.int32(0),
+               {numba.int32(0)},
+               numba.bool_(False)) for _ in range(0)]
     num_offsets = offsets.shape[0]
-    states = [{numba.int64(0)} for _ in range(0)]
+    states = [{numba.int32(0)} for _ in range(0)]
     for lst in states_lst:
         states.append(set(lst))
-    adj_list = [{numba.int64(0)} for _ in range(0)]
+    adj_list = [{numba.int32(0)} for _ in range(0)]
     for lst in adj_list_lst:
         adj_list.append(set(lst))
         
@@ -270,8 +290,14 @@ def _fast_wfc_tile(pat_size, adj_list_lst, states_lst, size, offsets):
         
         # Collapse it to a random state
         history.append((xy, state, True))
+        # choose_from = np.array(list(state), dtype=np.int64)
+        # p = np.array([weights[i] for i in choose_from], dtype=np.int64)
+        # p = np.cumsum(p)
+        # index = np.random.randint(0, p.sum())
+        # choice = np.where(p > index, p, np.inf).argmin()
         _i_xy = random.randint(0, len(state) - 1)
-        states[xy] = set([list(state)[_i_xy]])
+        choice = list(state)[_i_xy]
+        states[xy] = set([choice])
         
         # Propagate
         frontier = [xy]
@@ -301,18 +327,20 @@ def _fast_wfc_tile(pat_size, adj_list_lst, states_lst, size, offsets):
                 history.append((n_xy, other_state, False))
                 states[n_xy] = intersect
                 frontier.append(n_xy)
-    return np.array(list(map(lambda s: next(iter(s)), states)), dtype=np.int64)
+    return np.array(list(map(lambda s: next(iter(s)), states)), dtype=np.int32)
 
 @dataclass
 class WaveFunction:
     tile_classes: Sequence[TileState] # Tiles of each class
     allowed_adjacencies: Sequence[TileRule]
     pattern_size: Pos
+    weights: npt.NDArray[np.int32]
     
     def wfc_tile(self,
                  size: Pos,
                  input_states: WFMap,
-                 use_jit: Optional[bool]=None) -> List[int]:
+                 use_jit: Optional[bool]=None,
+                 use_weights: bool=True) -> List[int]:
         assert len(self.allowed_adjacencies) > 0
         if use_jit is None:
             use_jit = size[0] * size[1] >= 50 * 50
@@ -323,21 +351,33 @@ class WaveFunction:
         
         start_time = time.time_ns()
         if use_jit:
-            _states_numba = numba.typed.List(lsttype=numba.types.ListType(numba.types.List(numba.int64)))
+            _states_numba = numba.typed.List(lsttype=numba.types.ListType(
+                numba.types.ListType(numba.int32)))
             for state in states:
-                _states_numba.append(list(state))
-            _adj_numba = numba.typed.List()
+                _lst = numba.typed.List(lsttype=numba.types.ListType(
+                    numba.int32))
+                for i in state:
+                    _lst.append(i)
+                _states_numba.append(_lst)
+            _adj_numba = numba.typed.List(lsttype=numba.types.ListType(
+                numba.types.ListType(numba.int32)))
             for state_i in range(len(self.allowed_adjacencies[0])):
-                for offset_i, offset_rules in enumerate(self.allowed_adjacencies):
-                    _adj_numba.append(list(offset_rules[state_i]))
-            _psize_nubma = np.array(self.pattern_size, dtype=np.int64)
-            _size_numba = np.array(size, dtype=np.int64)
-            _offsets_numba = np.array(offsets, dtype=np.int64)
+                for offset_i, offset_rules\
+                        in enumerate(self.allowed_adjacencies):
+                    _lst = numba.typed.List(lsttype=numba.types.ListType(
+                        numba.int32))
+                    for i in offset_rules[state_i]:
+                        _lst.append(i)
+                    _adj_numba.append(_lst)
+            _psize_nubma = np.array(self.pattern_size, dtype=np.int32)
+            _size_numba = np.array(size, dtype=np.int32)
+            _offsets_numba = np.array(offsets, dtype=np.int32)
             fast_lst = _fast_wfc_tile(_psize_nubma,
                            _adj_numba,
                            _states_numba,
                            _size_numba,
-                           _offsets_numba)
+                           _offsets_numba,
+                           self.weights)
             print('jit_time =', (time.time_ns() - start_time) * 1e-9)
             return list(fast_lst)
 
@@ -377,7 +417,11 @@ class WaveFunction:
             
             # Collapse it to a random state
             history.append((xy, state, True))
-            states[xy] = set([random.choice(list(state))])
+            choose_from = np.array(list(state), dtype=np.int32)
+            p = (lambda x: x/x.sum())(self.weights[choose_from])\
+                if use_weights\
+                else None
+            states[xy] = set([np.random.choice(choose_from, p=p)])
             
             # Propagate
             frontier = deque([xy])

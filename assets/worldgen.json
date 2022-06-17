@@ -1,0 +1,18 @@
+{
+    "mainworld": {
+        "wall": {
+            "kind": "wfc",
+            "source": "map_sample.png",
+            "pattern_size": [3, 3],
+            "palette": [0, 1],
+            "border": [1]
+        },
+        "tile": {
+            "kind": "pass"
+        },
+        "border": 1,
+        "tiles": [
+        "floor", "wall"
+        ]
+    }
+}

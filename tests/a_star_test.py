@@ -1,6 +1,8 @@
 """Actually tests Djikstra, too"""
 import math
 
+import numpy as np
+
 from roguelike.world import dungeon
 from roguelike.engine import utils
 
@@ -20,13 +22,13 @@ map_chrs = [
 "XXXXXXXXXXXX"
 ]
 dmap = dungeon.DungeonMap((len(map_chrs[0]), len(map_chrs)), [floor, wall])
-costs = []
-for row in map_chrs:
-    for char in row:
+costs = np.zeros((len(map_chrs), len(map_chrs[0])))
+for y, row in enumerate(map_chrs):
+    for x, char in enumerate(row):
         if char == 'X':
-            costs.append(float('inf'))
+            costs[y, x] = (float('inf'))
         else:
-            costs.append(1)
+            costs[y, x] = (1)
 for y, line in enumerate(map_chrs):
     for x, char in enumerate(line):
         if (x, y) == start:
@@ -58,27 +60,18 @@ if steps is not None:
         print()
 
 start = ((2, 2),)
-dj = (utils.populate_djikstra(dmap.size, costs, start))
-for y in range(len(map_chrs)):
-    line = dj[y*len(map_chrs[0]) : (y+1)*len(map_chrs[0])]
-    for c in line:
-        if not math.isfinite(c):
-            print('---', end=' ')
-        else:
-            print(f'{c:3}', end=' ')
-    print()
+print(costs)
+dj = (utils.populate_djikstra(costs, start))
+print(dj)
 print()
 
 start = ((10, 4),)
-dj = utils.populate_djikstra(dmap.size, costs, start, dj)
-for y in range(len(map_chrs)):
-    line = dj[y*len(map_chrs[0]) : (y+1)*len(map_chrs[0])]
-    for c in line:
-        if not math.isfinite(c):
-            print('---', end=' ')
-        else:
-            print(f'{c:3}', end=' ')
-    print()
+dj = utils.populate_djikstra(costs, start, dj)
+print(dj)
+print()
+
+path = utils.trace_djikstra((3, 5), dj)
+print(path)
 
 group_chrs = [
 'XXXXXXXXXX',

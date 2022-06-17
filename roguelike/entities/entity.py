@@ -203,6 +203,13 @@ class Entity:
             msg,
             color,
             self.particle_backdrop)
+    
+    def entity_die(self,
+                   state: gamestate.GameState,
+                   killer: Optional['FightingEntity']=None) -> None:
+        """Calls when something needs to die or be removed"""
+        state = cast('DungeonMapState', state)
+        state.dungeon_map.remove_entity(self)
 
 class FightingEntity(Entity):
     """Entities that can take and deal damage and die
@@ -230,13 +237,6 @@ class FightingEntity(Entity):
             self.entity_die(state, attacker)
             return False
         return True
-    
-    def entity_die(self,
-                   state: gamestate.GameState,
-                   killer: Optional['FightingEntity']) -> None:
-        """Calls when something needs to die or be removed"""
-        state = cast('DungeonMapState', state)
-        state.dungeon_map.remove_entity(self)
     
     def _melee_attack_logic(self,
                       state: gamestate.GameState,

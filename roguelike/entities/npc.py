@@ -167,6 +167,8 @@ def parse_action(source: Dict[str, Any]) -> ChatAction:
         value: Any = source['value']
         func: str = cast(str, source.get('function', '='))
         return VarAction(varname, value, func)
+    elif kind == 'die':
+        return DieAction()
     else:
         raise ValueError(f'{kind} is not a valid action')
 
@@ -214,6 +216,20 @@ class VarAction:
         return True
 
 @dataclass
+class DieAction:
+    def perform_action(self,
+                       state: 'ChatPromptState') -> bool:
+        if state.chatter is None:
+            return False
+        def _event(_state, event):
+            while _state.locked():
+                yield True
+            state.chatter.entity_die(_state)
+            yield False
+        state.manager.state_stack[-2].queue_event(event_manager.Event(_event))
+        return True
+
+@dataclass
 class ChatPrompt:
     """A single window of text and pointers to choices/next options"""
     message: str
@@ -244,6 +260,7 @@ class ChatPromptState(ui.MenuState):
     
     def __init__(self, *args, **kwargs):
         self.chat: 'ChatPrompt' = kwargs.pop('chat')
+        self.chatter: Optional['NPCEntity'] = kwargs.pop('chatter', None)
         self.player: 'PlayerEntity' = kwargs.pop('player')
         
         super().__init__(*args, **kwargs)
@@ -434,7 +451,9 @@ class NPCEntity(entity.Entity):
                 self.anim.direction = sprite.AnimDir.UP
             elif player.dungeon_pos[1] > self.dungeon_pos[1]:
                 self.anim.direction = sprite.AnimDir.DOWN
-        new_state = ChatPromptState(chat=self.initial_prompt, player=player)
+        new_state = ChatPromptState(chat=self.initial_prompt,
+                                    chatter=self,
+                                    player=player)
         def _event(state, event):
             while state.locked():
                 yield True

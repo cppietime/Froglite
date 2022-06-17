@@ -5,6 +5,7 @@
         "animations",
         "consumables",
         "chats",
-        "tiles"
+        "tiles",
+        "worldgen"
     ]
 }

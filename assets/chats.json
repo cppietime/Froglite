@@ -2,7 +2,7 @@
     "test_chat": {
         "message": "Hello stranger",
         "icon": "potion",
-        "choices": ["Give me money", "I wanna buy", "I wanna sell back"],
+        "choices": ["Give me money", "I wanna buy", "I wanna sell back", "Die"],
         "next": [
         {
             "name": "give_money",
@@ -83,6 +83,13 @@
                 }
                 ]
             }
+        },
+        {
+            "name": "die",
+            "predicate": {
+                "kind": "choice",
+                "num": 3
+            }
         }
         ]
     },
@@ -133,6 +140,15 @@
             "name": "coins",
             "value": 3,
             "function": "+"
+        }
+        ]
+    },
+    "die": {
+        "message": "Goodbye",
+        "icon": "potion",
+        "actions": [
+        {
+            "kind": "die"
         }
         ]
     }

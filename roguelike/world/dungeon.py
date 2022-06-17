@@ -13,6 +13,7 @@ from typing import (
     ClassVar,
     Dict,
     List,
+    MutableSequence,
     Optional,
     Sequence,
     Tuple,
@@ -40,6 +41,7 @@ from roguelike.bag import consumables
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
+    from roguelike.world.world_gen import WorldGenerator
 
 class RandomAnimType(Enum):
     GLOBAL      = 0
@@ -108,10 +110,12 @@ class DungeonMapSpawner:
     player_pos: Tuple[int, int]
     tile_map: List[int] = field(default_factory=list)
     vignette_color: Tuple[float, float, float, float] = (.3, .25, 4, 1)
-    spawns: Sequence[Tuple[Tuple[int, int], Type, Dict[str, Any]]] = ()
+    spawns: MutableSequence[Tuple[Tuple[int, int], Type, Dict[str, Any]]] =\
+        field(default_factory=list)
+    border: int = -1
     
     def spawn_map(self):
-        dungeon_map = DungeonMap(self.size, self.tiles, self.vignette_color)
+        dungeon_map = DungeonMap(self.size, self.tiles, self.vignette_color, self.border)
         dungeon_map.tile_map = list(self.tile_map)
         for pos, ent_cls, kwargs in self.spawns:
             ent = ent_cls(dungeon_pos=list(pos), **kwargs)
@@ -135,7 +139,8 @@ class DungeonMap:
                  size: Tuple[int, int],
                  tiles: List[DungeonTile],
                  vignette_color: Tuple[float, float, float, float] =\
-                    (.3, .25, .4, 1)):
+                    (.3, .25, .4, 1),
+                 border: int = -1):
         self.size = size
         self.tiles = tiles
         self.tile_map: List[int] = []
@@ -145,6 +150,7 @@ class DungeonMap:
             defaultdict(lambda: None)
         self.player: entity.Entity = None # type: ignore
         self.vignette_color = vignette_color
+        self.border = border
     
     @staticmethod
     def _manhattan_dist(from_: Tuple[int, int], to: Tuple[int, int]) -> int:
@@ -175,11 +181,12 @@ class DungeonMap:
     
     def tile_at(self, pos: Tuple[int, int]) -> Optional[DungeonTile]:
         if pos[0] < 0 or pos[0] >= self.size[0]:
-            return None
-        if pos[1] < 0 or pos[1] >= self.size[1]:
-            return None
-        pindex = pos[1] * self.size[0] + pos[0]
-        index = self.tile_map[pindex]
+            index = self.border
+        elif pos[1] < 0 or pos[1] >= self.size[1]:
+            index = self.border
+        else:
+            pindex = pos[1] * self.size[0] + pos[0]
+            index = self.tile_map[pindex]
         if index == -1:
             return None
         return self.tiles[index]
@@ -245,6 +252,16 @@ class DungeonMapState(gamestate.GameState):
         self.blackout = 0.
         self.respawn()
     
+    def generate_from(self, gen: 'WorldGenerator', size: Tuple[int, int], **kwargs) -> None:
+        spawner = gen.generate_world(size, **kwargs)
+        self.load_spawner(spawner)
+    
+    def load_spawner(self, spawner: DungeonMapSpawner) -> None:
+        self.dungeon_map_spec = spawner
+    
+    def enter_loaded_room(self) -> None:
+        self.dungeon_map = self.dungeon_map_spec.spawn_map()
+    
     def respawn(self):
         self.dungeon_map = self.dungeon_map_spec.spawn_map()
         self.blackout = 0.
@@ -253,140 +270,143 @@ class DungeonMapState(gamestate.GameState):
                          delta_time: float,
                          renderer: 'Renderer') -> None:
         super().render_gamestate(delta_time, renderer)
-        player = self.dungeon_map.player
-        # Get important camera info
-        
-        num_tiles_x = (renderer.screen_size[0] + self.tile_size - 1)\
-            // self.tile_size + 2
-        num_tiles_y = (renderer.screen_size[1] + self.tile_size - 1)\
-            // self.tile_size + 2
-        c_x = self.camera.x + player.rect.x + player.rect.w // 2
-        c_y = self.camera.y + player.rect.y + player.rect.h // 2
-        adj_x = c_x - renderer.screen_size[0] // 2
-        adj_y = c_y - renderer.screen_size[1] // 2
-        start_tile_x = math.floor(
-            (c_x - renderer.screen_size[0] // 2)\
-            // self.tile_size - 1)
-        start_tile_y = math.floor(
-            (c_y - renderer.screen_size[1] // 2)\
-            // self.tile_size - 1)
-        
-        player_scr_x = player.rect.x + player.rect.w // 2 - adj_x
-        player_scr_y = player.rect.y + player.rect.h // 2 - adj_y
-        
-        # Render background tiles
         oldest_fbo = renderer.current_fbo()
         
-        stack_fbo = renderer.push_fbo()
-        stack_fbo.clear(0, 0, 0, 1)
-        for y in range(start_tile_y, start_tile_y + num_tiles_y):
-            for x in range(start_tile_x, start_tile_x + num_tiles_x):
-                tile = self.dungeon_map.tile_at((x, y))
-                if tile is not None:
-                    if tile.special_render:
-                        tile.render(delta_time,
-                                    renderer,
-                                    (x, y),
-                                    self.tile_size)
-                    else:
-                        dt = 0
-                        if tile.offset_type == RandomAnimType.X:
-                            dt += x * tile.offset_power
-                        elif tile.offset_type == RandomAnimType.Y:
-                            dt += y * tile.offset_power
-                        elif tile.offset_type == RandomAnimType.X_PLUS_Y:
-                            dt += (x + y) * tile.offset_power
-                        elif tile.offset_type == RandomAnimType.X_MINUS_Y:
-                            dt += (x - y) * tile.offset_power
-                        elif tile.offset_type == RandomAnimType.RANDOM:
-                            dt += random.random() * tile.offset_power
-                        tile.anim.render(renderer,
-                                         (x * self.tile_size - adj_x,
-                                          y * self.tile_size - adj_y),
-                                         (self.tile_size, self.tile_size),
-                                         0,
-                                         dt)
-        # Experimenal, bloom?
-        # renderer.apply_bloom(5, 1, .7)
-        # Nah
-        
-        # Render dark FBO
-        renderer.fbo_to_fbo(oldest_fbo,
-                            stack_fbo,
-                            colorMask = self.dungeon_map.vignette_color)
-        
-        # Draw vignette sprite
-        renderer.fbos['accum0'].use()
-        renderer.clear()
-        renderer.render_sprite(self.vignette_sprite,
-                               (player_scr_x, player_scr_y),
-                               (renderer.screen_size[1],
-                                renderer.screen_size[1]),
-                               positioning=('center', 'center'))
-        stack_fbo.use()
-        renderer.apply_vignette(oldest_fbo,
-                                renderer.fbos['accum0'].color_attachments[0])
-        renderer.pop_fbo()
-        
-        # Increment tile animations
-        for tile in self.dungeon_map.tiles:
-            tile.anim.increment(delta_time)
-        
-        # TODO: render foreground
-        
-        # Render other entities w/ vignette effect
-        stack_fbo = renderer.push_fbo()
-        renderer.clear()
-        for pos, ent in self.dungeon_map.entities.items():
-            if (ent.rect.x < renderer.screen_size[0]
-                    or ent.rect.x + ent.rect.w >= 0)\
-                    and (ent.rect.y < renderer.screen_size[1]
-                    or ent.rect.y + ent.rect.h >= 0):
-                ent.render_entity(delta_time, renderer, (-adj_x, -adj_y))
-        # Do post effects after
-        for pos, ent in self.dungeon_map.entities.items():
-            if (ent.rect.x < renderer.screen_size[0]
-                    or ent.rect.x + ent.rect.w >= 0)\
-                    and (ent.rect.y < renderer.screen_size[1]
-                    or ent.rect.y + ent.rect.h >= 0):
-                ent.render_entity_post(delta_time, renderer, (-adj_x, -adj_y))
+        if self.blackout < 1:
+            player = self.dungeon_map.player
+            # Get important camera info
+            
+            num_tiles_x = (renderer.screen_size[0] + self.tile_size - 1)\
+                // self.tile_size + 2
+            num_tiles_y = (renderer.screen_size[1] + self.tile_size - 1)\
+                // self.tile_size + 2
+            c_x = self.camera.x + player.rect.x + player.rect.w // 2
+            c_y = self.camera.y + player.rect.y + player.rect.h // 2
+            adj_x = c_x - renderer.screen_size[0] // 2
+            adj_y = c_y - renderer.screen_size[1] // 2
+            start_tile_x = math.floor(
+                (c_x - renderer.screen_size[0] // 2)\
+                // self.tile_size - 1)
+            start_tile_y = math.floor(
+                (c_y - renderer.screen_size[1] // 2)\
+                // self.tile_size - 1)
+            
+            player_scr_x = player.rect.x + player.rect.w // 2 - adj_x
+            player_scr_y = player.rect.y + player.rect.h // 2 - adj_y
+            
+            # Render background tiles
+            
+            stack_fbo = renderer.push_fbo()
+            stack_fbo.clear(0, 0, 0, 1)
+            for y in range(start_tile_y, start_tile_y + num_tiles_y):
+                for x in range(start_tile_x, start_tile_x + num_tiles_x):
+                    tile = self.dungeon_map.tile_at((x, y))
+                    if tile is not None:
+                        if tile.special_render:
+                            tile.render(delta_time,
+                                        renderer,
+                                        (x, y),
+                                        self.tile_size)
+                        else:
+                            dt = 0
+                            if tile.offset_type == RandomAnimType.X:
+                                dt += x * tile.offset_power
+                            elif tile.offset_type == RandomAnimType.Y:
+                                dt += y * tile.offset_power
+                            elif tile.offset_type == RandomAnimType.X_PLUS_Y:
+                                dt += (x + y) * tile.offset_power
+                            elif tile.offset_type == RandomAnimType.X_MINUS_Y:
+                                dt += (x - y) * tile.offset_power
+                            elif tile.offset_type == RandomAnimType.RANDOM:
+                                dt += random.random() * tile.offset_power
+                            tile.anim.render(renderer,
+                                             (x * self.tile_size - adj_x,
+                                              y * self.tile_size - adj_y),
+                                             (self.tile_size, self.tile_size),
+                                             0,
+                                             dt)
+            # Experimenal, bloom?
+            # renderer.apply_bloom(5, 1, .7)
+            # Nah
+            
+            # Render dark FBO
+            renderer.fbo_to_fbo(oldest_fbo,
+                                stack_fbo,
+                                colorMask = self.dungeon_map.vignette_color)
+            
+            # Draw vignette sprite
+            renderer.fbos['accum0'].use()
+            renderer.clear()
+            renderer.render_sprite(self.vignette_sprite,
+                                   (player_scr_x, player_scr_y),
+                                   (renderer.screen_size[1],
+                                    renderer.screen_size[1]),
+                                   positioning=('center', 'center'))
+            stack_fbo.use()
+            renderer.apply_vignette(oldest_fbo,
+                                    renderer.fbos['accum0'].color_attachments[0])
+            renderer.pop_fbo()
+            
+            # Increment tile animations
+            for tile in self.dungeon_map.tiles:
+                tile.anim.increment(delta_time)
+            
+            # TODO: render foreground
+            
+            # Render other entities w/ vignette effect
+            stack_fbo = renderer.push_fbo()
+            renderer.clear()
+            for pos, ent in self.dungeon_map.entities.items():
+                if (ent.rect.x < renderer.screen_size[0]
+                        or ent.rect.x + ent.rect.w >= 0)\
+                        and (ent.rect.y < renderer.screen_size[1]
+                        or ent.rect.y + ent.rect.h >= 0):
+                    ent.render_entity(delta_time, renderer, (-adj_x, -adj_y))
+            # Do post effects after
+            for pos, ent in self.dungeon_map.entities.items():
+                if (ent.rect.x < renderer.screen_size[0]
+                        or ent.rect.x + ent.rect.w >= 0)\
+                        and (ent.rect.y < renderer.screen_size[1]
+                        or ent.rect.y + ent.rect.h >= 0):
+                    ent.render_entity_post(delta_time, renderer, (-adj_x, -adj_y))
 
-        # Vignette on visibility of mobs
-        renderer.fbos['accum0'].use()
-        renderer.clear()
-        renderer.render_sprite(self.vignette_sprite,
-                               (player_scr_x, player_scr_y),
-                               (renderer.screen_size[1],
-                                renderer.screen_size[1]),
-                               positioning=('center', 'center'))
-        stack_fbo.use()
-        renderer.apply_vignette(oldest_fbo,
-                                renderer.fbos['accum0'].color_attachments[0])
-        renderer.pop_fbo()
-        oldest_fbo.use()
+            # Vignette on visibility of mobs
+            renderer.fbos['accum0'].use()
+            renderer.clear()
+            renderer.render_sprite(self.vignette_sprite,
+                                   (player_scr_x, player_scr_y),
+                                   (renderer.screen_size[1],
+                                    renderer.screen_size[1]),
+                                   positioning=('center', 'center'))
+            stack_fbo.use()
+            renderer.apply_vignette(oldest_fbo,
+                                    renderer.fbos['accum0'].color_attachments[0])
+            renderer.pop_fbo()
+            oldest_fbo.use()
+            
+            # Render player
+            player.render_entity(delta_time,
+                                 renderer,
+                                 (-adj_x + player.shaky_cam[0],
+                                  -adj_y + player.shaky_cam[1]))
+            
+            # Render particles
+            self.particles[:] = [p for p in self.particles if
+                p.render_particle(delta_time, renderer, (-adj_x, -adj_y))]
+            
+            # Render UI
+            hp_str = f'HP:{player.hp:4}/{player.max_hp:4}'
+            self.font.draw_str(hp_str,
+                                          (self.tile_size // 4,) * 2,
+                                          (0, 1, 0, 1),
+                                          (self.base_text_scale,) * 2)
+            coin_str = f"Coins:{assets.variables['coins']}"
+            self.font.draw_str(coin_str,
+                               (self.tile_size * 8, self.tile_size // 4),
+                               (.8, .8, 0, 1),
+                               (self.base_text_scale,) * 2)
         
-        # Render player
-        player.render_entity(delta_time,
-                             renderer,
-                             (-adj_x + player.shaky_cam[0],
-                              -adj_y + player.shaky_cam[1]))
-        
-        # Render particles
-        self.particles[:] = [p for p in self.particles if
-            p.render_particle(delta_time, renderer, (-adj_x, -adj_y))]
-        
-        # Render UI
-        hp_str = f'HP:{player.hp:4}/{player.max_hp:4}'
-        self.font.draw_str(hp_str,
-                                      (self.tile_size // 4,) * 2,
-                                      (0, 1, 0, 1),
-                                      (self.base_text_scale,) * 2)
-        coin_str = f"Coins:{assets.variables['coins']}"
-        self.font.draw_str(coin_str,
-                           (self.tile_size * 8, self.tile_size // 4),
-                           (.8, .8, 0, 1),
-                           (self.base_text_scale,) * 2)
-        
+        # Blackout effect
         if self.blackout > 0:
             stack_fbo = renderer.push_fbo()
             renderer.clear(0, 0, 0, self.blackout)

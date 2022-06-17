@@ -21,14 +21,35 @@ from PIL import Image # type: ignore
 from roguelike.engine import assets
 
 Pos = Tuple[int, int]
-Grid = Tuple[Pos, npt.NDArray[np.int64]]
+Grid = Tuple[Pos, npt.NDArray[np.int32]]
 
+_grid_cache: Dict[str, Grid] = {}
 def load_grid(imgname: str) -> Grid:
+    """Loads a paletted image as a grid of integers, cached by name"""
+    if imgname in _grid_cache:
+        return _grid_cache[imgname]
     asset_dir = assets.asset_path(imgname)
     with Image.open(asset_dir) as img:
         assert img.mode == 'P'
-        grid = (img.size, np.array(img.getdata()))
+        grid = (img.size, np.array(img.getdata(), dtype=np.int32))
+    _grid_cache[imgname] = grid
     return grid
+
+def save_grid(grid: npt.NDArray[np.int32], fname: str) -> None:
+    ba = bytearray()
+    for px in grid.flatten():
+        ba.append(px)
+    im = Image.frombytes('P', grid.shape[::-1], bytes(ba))
+    base = 51
+    palette = []
+    for i in range(216):
+        gb, r = divmod(i, 6)
+        b, g = divmod(gb, 6)
+        palette += [((6 - r) % 6) * base,
+                    ((6 - g) % 6) * base,
+                    ((6 - b) % 6) * base]
+    im.putpalette(palette, 'RGB')
+    im.save(fname)
 
 class CardinalDirections(Enum):
     UP = (0, -1)
@@ -41,7 +62,7 @@ def manhattan_dist(from_: Pos, to: Pos) -> int:
 
 AS_State = Tuple[float, float, Pos, Pos]
 
-def a_star(costs: npt.NDArray[np.int64],
+def a_star(costs: npt.NDArray[np.float64],
            from_: Pos,
            to: Pos,
            max_cost: Optional[float]=None) -> Optional[List[Pos]]:
@@ -91,11 +112,11 @@ def a_star(costs: npt.NDArray[np.int64],
                 visited.add(step)
     return None
 
-def populate_djikstra(costs: npt.NDArray[np.int64],
+def populate_djikstra(costs: npt.NDArray[np.float64],
                       starting_points: Iterable[Pos],
                       start_costs: Optional[
-                        npt.NDArray[np.int64]] = None)\
-                    -> npt.NDArray[np.int64]:
+                        npt.NDArray[np.float64]] = None)\
+                    -> npt.NDArray[np.float64]:
     """Populates each tile with a djikstra distance
     costs: row-major sequence of floats with the cost to enter each tile
     starting_points: points to update with cost of 0
@@ -130,8 +151,28 @@ def populate_djikstra(costs: npt.NDArray[np.int64],
                 heapq.heappush(frontier, (new_cost, (x, y)))
     return start_costs
 
-def clear_blockage(dists: npt.NDArray[np.int64]) ->\
-        npt.NDArray[np.int64]:
+def trace_djikstra(start: Pos, dists: npt.NDArray[np.float64]) -> List[Pos]:
+    """Get a path from a specified starting point to a local minimum"""
+    path: List[Pos] = [start]
+    head = start
+    while True:
+        min_neighbor = head
+        min_dist = dists[head[::-1]]
+        for direction in CardinalDirections:
+            x, y = head[0] + direction.value[0], head[1] + direction.value[1]
+            if x < 0 or x >= dists.shape[1] or y < 0 or y >= dists.shape[0]:
+                continue
+            dist = dists[y, x]
+            if dist < min_dist:
+                min_dist = dist
+                min_neighbor = x, y
+        if min_neighbor == head:
+            return path
+        path.append(min_neighbor)
+        head = min_neighbor
+
+def clear_blockage(dists: npt.NDArray[np.float64]) ->\
+        npt.NDArray[np.bool_]:
     """Returns a copy of dists where any grids that potentially block
     1-wide paths have infinite cost
     """
@@ -148,9 +189,15 @@ def clear_blockage(dists: npt.NDArray[np.int64]) ->\
     blockage |= down & ~down_left & ~down_right
     blockage |= left & ~up_left & ~down_left
     blockage |= right & ~up_right & ~down_right
-    cleared = dists.copy()
-    cleared[blockage] = np.inf
-    return cleared
+    blockage |= up & left & ~up_left &\
+        ~(up_right & right & down_right & down & down_left)
+    blockage |= up & right & ~up_right &\
+        ~(up_left & left & down_left & down & down_right)
+    blockage |= down & left & ~down_left &\
+        ~(down_right & right & up_right & up & up_left)
+    blockage |= down & right & ~down_right &\
+        ~(down_left & left & up_left & up & up_right)
+    return blockage
 
 def group(size: Pos,
           passable: Sequence[bool]) -> List[Set[Pos]]:
