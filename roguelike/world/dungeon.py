@@ -120,7 +120,7 @@ class DungeonMapSpawner:
         dungeon_map = DungeonMap(self.size, self.tiles, self.vignette_color, self.border)
         dungeon_map.tile_map = list(self.tile_map)
         for pos, ent_cls, kwargs in self.spawns:
-            ent = ent_cls(dungeon_pos=list(pos), **kwargs)
+            ent = ent_cls(dungeon_pos=list(pos), **dict(kwargs))
             dungeon_map.place_entity(ent)
         if old_player is not None:
             old_player.be_at(self.player_pos)
@@ -415,8 +415,13 @@ class DungeonMapState(gamestate.GameState):
                                           (self.base_text_scale,) * 2)
             coin_str = f"Coins:{assets.variables['coins']}"
             self.font.draw_str(coin_str,
-                               (self.tile_size * 8, self.tile_size // 4),
+                               (self.tile_size * 6, self.tile_size // 4),
                                (.8, .8, 0, 1),
+                               (self.base_text_scale,) * 2)
+            room_str = f"Room {assets.variables['difficulty']}"
+            self.font.draw_str(room_str,
+                               (self.tile_size * 11, self.tile_size // 4),
+                               (.2, .7, .4, 1),
                                (self.base_text_scale,) * 2)
         
         # Blackout effect

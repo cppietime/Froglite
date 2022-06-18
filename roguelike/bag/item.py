@@ -70,6 +70,7 @@ class KeyItem(BaseItem):
 class EquipmentSlot(IntEnum):
     WEAPON = 0
     SPELL = 1
+    ARMOR = 2
 
 @dataclass(frozen=True, eq=True)
 class EquipableItem(BaseItem):
@@ -88,6 +89,14 @@ class WeaponItem(EquipableItem):
     
     itemslot = ItemSlot.EQUIPMENT
     equip_slot = EquipmentSlot.WEAPON
+
+@dataclass(frozen=True, eq=True)
+class ArmorItem(EquipableItem):
+    """Armor"""
+    def_mul: float
+    
+    itemslot = ItemSlot.EQUIPMENT
+    equip_slot = EquipmentSlot.ARMOR
 
 @dataclass(frozen=True, eq=True)
 class SpellItem(EquipableItem):

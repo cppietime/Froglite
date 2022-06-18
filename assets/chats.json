@@ -151,5 +151,21 @@
             "kind": "die"
         }
         ]
+    },
+    "warp": {
+        "message": "See ya home boy",
+        "icon": "potion",
+        "actions": [
+        {
+            "kind": "warp",
+            "world_gen": "mainworld",
+            "size": [20, 20]
+        },
+        {
+            "kind": "var",
+            "name": "world_gen",
+            "value": "mainworld"
+        }
+        ]
     }
 }

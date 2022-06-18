@@ -30,7 +30,8 @@ from roguelike.entities import (
 from roguelike.bag import (
     consumables,
     inventory_state,
-    keys
+    keys,
+    weapons
 )
 from roguelike.world import (
     dungeon,
@@ -88,6 +89,7 @@ dungeon.init_tiles()
 
 consumables.init_items()
 keys.init_items()
+weapons.init_items()
 npc.init_chats()
 world_gen.init_generators()
 

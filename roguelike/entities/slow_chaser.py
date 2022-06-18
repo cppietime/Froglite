@@ -71,6 +71,8 @@ class PursuantEnemy(entity.EnemyEntity):
                       player_pos: Tuple[int, int]) -> None:
         super().chase_player(state, player_pos, -1)
 
+entity.entities['Pursuant'] = PursuantEnemy
+
 class NiceSlowChaser(npc.NPCEntity):
     attackable=False
     actionable=False

@@ -31,11 +31,18 @@ from roguelike.bag import (
     inventory_state,
     item
 )
+from roguelike.world import (
+    world_gen,
+    lvl_entity
+)
 
 if TYPE_CHECKING:
     from roguelike.entities.player import PlayerEntity
     from roguelike.engine.gamestate import GameState
     from roguelike.engine.text import CharBank
+    from roguelike.world.dungeon import DungeonMapState
+
+Pos = Tuple[int, int]
 
 class ChatPredicate(Protocol):
     def is_fulfilled(self, state: 'ChatPromptState') -> bool:
@@ -169,6 +176,10 @@ def parse_action(source: Dict[str, Any]) -> ChatAction:
         return VarAction(varname, value, func)
     elif kind == 'die':
         return DieAction()
+    elif kind == 'warp':
+        name = source['world_gen']
+        size = cast(Pos, tuple(source['size']))
+        return WarpAction(name, size)
     else:
         raise ValueError(f'{kind} is not a valid action')
 
@@ -227,6 +238,17 @@ class DieAction:
             state.chatter.entity_die(_state)
             yield False
         state.manager.state_stack[-2].queue_event(event_manager.Event(_event))
+        return True
+
+@dataclass
+class WarpAction:
+    world_type_name: str
+    world_size: Pos
+    def perform_action(self,
+                       state: 'ChatPromptState') -> bool:
+        dms = cast('DungeonMapState', state.manager.state_stack[-2])
+        world_type = world_gen.world_generators[self.world_type_name]
+        lvl_entity.warp(dms, world_type, self.world_size)
         return True
 
 @dataclass
@@ -320,8 +342,11 @@ class ChatPromptState(ui.MenuState):
         self.holder.selection = 0
         self.chat_box_label.text = self.chat.message
         self.menu_up = False
-        for action in self.chat.actions:
-            action.perform_action(self)
+        def _event(state, event):
+            for action in self.chat.actions:
+                action.perform_action(self)
+            yield False
+        self.queue_event(event_manager.Event(_event))
     
     def progress(self) -> None:
         """Called when the user makes a selection"""
@@ -433,7 +458,7 @@ class NPCEntity(entity.Entity):
     interactable = True
     
     def __init__(self, *args, **kwargs):
-        self.initial_prompt: ChatPrompt = kwargs.pop('chat')
+        self.initial_prompt: ChatPrompt = chats[kwargs.pop('chat')]
         if 'anim' in kwargs:
             self.class_anim = kwargs.pop('anim')
         super().__init__(*args, passable=False, **kwargs)

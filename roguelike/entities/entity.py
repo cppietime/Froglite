@@ -17,12 +17,16 @@ from typing import (
 )
 
 from roguelike.engine import (
+    assets,
     awaiting,
     event_manager,
     gamestate,
     sprite,
     text,
     tween
+)
+from roguelike.entities import (
+    spawn
 )
 
 if TYPE_CHECKING:
@@ -260,7 +264,9 @@ class FightingEntity(Entity):
         """Internal helper function for melee attacks that does not handle
         animations
         """
-        return 20
+        atk = self.effective_attack()
+        dfn = target.effective_defense()
+        return max(1, int(round(atk / dfn)))
     
     attack_length: ClassVar[float] = .25
     
@@ -290,6 +296,12 @@ class FightingEntity(Entity):
             target.get_hit(_state, self, damage)
             yield not _state.locked()
         state.queue_event(event_manager.Event(_script))
+    
+    def effective_attack(self) -> float:
+        return self.attack_stat
+    
+    def effective_defense(self) -> float:
+        return self.defense_stat
     
 class ActingEntity(FightingEntity):
     """Entities that take actions between turns
@@ -368,6 +380,9 @@ class EnemyEntity(ActingEntity):
     hp_font: ClassVar[text.CharBank]
     
     def __init__(self, *args, **kwargs):
+        self.gold_drop = cast(int, kwargs.pop('gold', 0))
+        drop_dict = kwargs.pop('drops', [])
+        self.drops = spawn.parse_spawns(drop_dict)
         super().__init__(*args, **kwargs)
     
     step_len_s: ClassVar[float] = .25
@@ -435,3 +450,15 @@ class EnemyEntity(ActingEntity):
                                         (self.rect.w,
                                          self.rect.h * self.hp_bar_h),
                                         self.hp_bar_color)
+    
+    def entity_die(self, state, killer):
+        super().entity_die(state, killer)
+        if self.gold_drop > 0:
+            assets.variables['coins'] += self.gold_drop
+            self.pain_particle(state, f'+{self.gold_drop}', (1, 1, 0, 1))
+        child = self.drops.populate(tuple(self.dungeon_pos))
+        if child is not None:
+            ent = child[1](**child[2])
+            ent.be_at(self.dungeon_pos)
+            state.dungeon_map.place_entity(ent)
+

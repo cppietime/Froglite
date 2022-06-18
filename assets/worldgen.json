@@ -9,6 +9,12 @@
         },
         "features": [
         {
+            "kind": "join",
+            "passable": [0],
+            "inside": 0,
+            "outside": 1
+        },
+        {
             "kind": "dla",
             "num": 20,
             "sticky": 0,
@@ -29,7 +35,7 @@
             "leaf_size": [6, 6],
             "join": true,
             "inside": 0,
-            "border": 2,
+            "border": 1,
             "outside": 1
         },
         "features": [
@@ -42,13 +48,49 @@
         "floor", "wall", "badfloor"
         ],
         "spawns": [
+        {
+            "class": "Pursuant",
+            "animation": "slow_chaser",
+            "action_cost": 2,
+            "limit": 4,
+            "attack": 2,
+            "defense": 1,
+            "gold": 4,
+            "drops": [
+            {
+                "class": "Pursuant",
+                "animation": "slow_chaser",
+                "action_cost": 4,
+                "limit": 4,
+                "attack": 2,
+                "defense": 1,
+                "weight": 1
+            },
+            {
+                "weight": 4
+            }
+            ],
+            "weight": 3
+        },
+        {
+            "class": "ItemEntity",
+            "item": "Knife",
+            "count": 1,
+            "limit": 10,
+            "weight": 1
+        },
+        {
+            "class": "NPCEntity",
+            "animation": "player",
+            "chat": "warp",
+            "weight": 1
+        }
         ],
         "boredom": 5,
         "exits": [
         {
             "key": "Key"
-        },
-        {}
+        }
         ]
     }
 }

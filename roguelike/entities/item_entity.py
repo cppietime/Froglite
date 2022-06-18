@@ -12,9 +12,9 @@ if TYPE_CHECKING:
 class ItemEntity(entity.Entity):
     interactable = True
     def __init__(self, *args, **kwargs):
-        self.class_anim = kwargs.pop('anim', None)
         self.name = kwargs.pop('name', 'Pursuant')
         self.item = item.items[kwargs.pop('item')]
+        self.class_anim = self.item.icon
         self.count = kwargs.pop('count', 1)
         super().__init__(*args, passable=False, **kwargs)
         if self.anim is not None:

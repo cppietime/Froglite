@@ -35,7 +35,12 @@ class PlayerEntity(entity.FightingEntity):
     def __init__(self, *args, **kwargs):
         self.class_anim = assets.Animations.instance.player
         self.sqr_sprite = assets.Sprites.instance.highlight
-        super().__init__(*args, passable=False, max_hp=1, **kwargs)
+        super().__init__(*args,
+                         passable=False,
+                         max_hp=10,
+                         attack=5,
+                         defense=1,
+                         **kwargs)
         self.anim.speed = 0
         self.anim.direction = sprite.AnimDir.DOWN
         self.shaky_cam: List[int] = [0, 0]
@@ -215,7 +220,7 @@ class PlayerEntity(entity.FightingEntity):
     
     def melee_attack(self, state, target) -> None:
         # TODO calculate actual damage
-        damage = self._melee_attack_logic(state, target) * 0 + 1
+        damage = self._melee_attack_logic(state, target)
         my_anim = cast(sprite.AnimationState, self.anim)
         my_anim.state = sprite.AnimState.ATTACK
         other_x = target.dungeon_pos[0] * state.tile_size
@@ -257,5 +262,20 @@ class PlayerEntity(entity.FightingEntity):
             _state.let_entities_move()
             yield False
         state.queue_event(event_manager.Event(_event))
+        
+    def effective_attack(self):
+        weapon = self.inventory[item.EquipmentSlot.WEAPON]
+        atk_mul = 1
+        if weapon is not None:
+            atk_mul = weapon.damage_mul
+        attack_stat = super().effective_attack() * atk_mul
+        return max(1, int(round(attack_stat)))
+        
+    def effective_defense(self):
+        armor = self.inventory[item.EquipmentSlot.ARMOR]
+        def_mul = 1
+        if armor is not None:
+            def_mul = weapon.def_mul
+        return max(1, int(round(super().effective_defense() * def_mul)))
     
     

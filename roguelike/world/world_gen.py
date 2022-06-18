@@ -43,7 +43,8 @@ from roguelike.bag import (
 )
 from roguelike.entities import (
     entity,
-    item_entity
+    item_entity,
+    spawn
 )
 
 Pos = Tuple[int, int]
@@ -132,6 +133,10 @@ class WallGeneratorWFC:
 
 @dataclass
 class WallGeneratorBSP:
+    """Generates rectangular rooms by dividing the map into random
+    BSPs and creating a room in each one, then optionally joining them
+    with orthogonal tunnels
+    """
     inside: int
     outside: int
     border: int
@@ -144,6 +149,8 @@ class WallGeneratorBSP:
                        self.outside,
                        self.border,
                        self.join)
+
+# TODO Perlin/Simplex noise
 
 class WallFeature(Protocol):
     """Modifies generated walls"""
@@ -158,15 +165,21 @@ def parse_wall_feature(source: Dict[str, Any]) -> WallFeature:
         out = cast(bool, source.get('out', False))
         sticky = cast(int, source['sticky'])
         return WallFeatureDLA(num, out, sticky)
+    elif kind == 'join':
+        passables = set(source['passable'])
+        inside = source['inside']
+        outside = source['outside']
+        border = source.get('border', outside)
+        return WallFeatureJoin(passables, inside, outside, border)
     else:
         raise ValueError(f'{kind} is not a valid feature type')
 
+@dataclass
 class WallFeatureDLA:
-    def __init__(self, num_shots: int, outward: bool, sticky: int):
-        self.num_shots = num_shots
-        self.outward = outward
-        self.sticky = sticky
-    
+    """Applies an erosion style effect with diffusion-limited aggregation"""
+    num_shots: int
+    outward: bool
+    sticky: int
     def apply_feature(self, walls: WallGrid) -> None:
         for _ in range(self.num_shots):
             if self.outward:
@@ -191,8 +204,8 @@ class WallFeatureDLA:
                         position[1] + direction.value[1]
                 if self.outward:
                     stuck = False
-                    if x == 0 or y == 0 or x == walls.shape[1] - 1\
-                            or y == walls.shape[0] - 1:
+                    if x == 0 or y == 0 or x >= walls.shape[1] - 1\
+                            or y >= walls.shape[0] - 1:
                         stuck = True
                     else:
                         current = walls[y, x]
@@ -214,6 +227,30 @@ class WallFeatureDLA:
                         break
                 position = x, y
 
+@dataclass
+class WallFeatureJoin:
+    """Ensures connectedness between all passable groups of contiguous
+    tiles. Basically makes sure the player can reach everywhere in the
+    map.
+    Superfluous on BSP maps where join is True
+    """
+    passable_classes: Set[int]
+    inside: int
+    outside: int
+    border: int
+    def apply_feature(self, walls: WallGrid) -> None:
+        while True:
+            passable = [i in self.passable_classes for i in walls.flatten()]
+            groups = utils.group(cast(Pos, walls.shape[::-1]), passable)
+            if len(groups) < 2:
+                break
+            i = random.randint(0, len(groups) - 2)
+            j = random.randint(i + 1, len(groups) - 1)
+            i_pos = random.choice(list(groups[i]))
+            j_pos = random.choice(list(groups[j]))
+            bsp.tunnel(walls, i_pos, j_pos,
+                       self.inside, self.outside, self.border)
+
 class TileGenerator(Protocol):
     """Handles populating a grid with actual tiles"""
     def assign_tiles(self, walls: WallGrid) -> TileGrid:
@@ -230,10 +267,12 @@ def parse_tile_generator(source: Dict[str, Any]) -> TileGenerator:
         raise ValueError('f{kind} is not a valid tile generator type')
 
 class TileGeneratorPassThru:
+    """Just converts tile classes to tiles"""
     def assign_tiles(self, walls: WallGrid) -> TileGrid:
         return cast(TileGrid, walls)
 
 class TileGeneratorWhiteNoise:
+    """Selects a random tile for each class, with weights"""
     def __init__(self, classes: Iterable[Iterable[Tuple[int, float]]]):
         self.classes: List[Tuple[npt.NDArray[np.int32],
                                  npt.NDArray[np.float64]]] = []
@@ -256,23 +295,6 @@ class TileGeneratorWhiteNoise:
         return tiles
 
 Predicates = Sequence[Tuple[str, str, Any]]
-
-def eval_preds(predicates: Predicates) -> bool:
-    for varname, comparison, value in predicates:
-        variable = assets.variables[varname]
-        if comparison == '=' and variable != value:
-            return False
-        elif comparison == '!=' and variable == value:
-            return False
-        elif comparison == '>' and variable <= value:
-            return False
-        elif comparison == '>=' and variable < value:
-            return False
-        elif comparison == '<' and variable >= value:
-            return False
-        elif comparison == '<=' and variable > value:
-            return False
-    return True
     
 @dataclass
 class ExitPlacer:
@@ -293,62 +315,6 @@ def parse_exits(source: List[Dict[str, Any]]) -> List[ExitPlacer]:
     return exits
 
 @dataclass
-class Spawn:
-    spawn_class: Type[entity.Entity]
-    params: Dict[str, Any]
-    limit: int
-    weight: float
-    difficulty_range: Pos
-    predicates: Predicates
-
-@dataclass
-class Populator:
-    spawns: Sequence[Spawn]
-    so_far: List[int] = field(init=False)
-    def __post_init__(self):
-        self.reset_counts()
-    
-    def reset_counts(self) -> None:
-        self.so_far = [0] * len(self.spawns)
-    
-    """Puts something optional and interesting into a level"""
-    def populate(self, pos: Pos) -> Optional[Tuple[Pos, type, Dict[str, Any]]]:
-        options = [i for i, spn in enumerate(self.spawns)\
-            if (self.so_far[i] < spn.limit or spn.limit < 0)\
-            and eval_preds(spn.predicates)]
-        if len(options) == 0:
-            return None
-        weights = np.array([self.spawns[i].weight for i in options],
-                           dtype=float)
-        choice = np.random.choice(options, p=weights/weights.sum())
-        spawn = self.spawns[choice]
-        self.so_far[choice] += 1
-        return (pos, spawn.spawn_class, spawn.params)
-
-def parse_spawns(source: List[Dict[str, Any]]) -> Populator:
-    spawns: List[Spawn] = []
-    for spawn_d in source:
-        class_name = cast(str, spawn_d.pop('class'))
-        clazz = entity.entities[class_name]
-        anim_name = cast(Optional[str], spawn_d.pop('animation', None))
-        limit = spawn_d.pop('limit', -1)
-        weight = spawn_d.pop('weight', 1)
-        diff = cast(Pos, tuple(spawn_d.pop('difficulty', [-1, -1])))
-        preds = cast(Predicates,
-                     tuple(map(tuple, spawn_d.pop('predicates', []))))
-        params = dict(spawn_d)
-        if anim_name is not None:
-            if anim_name in assets.Animations.instance.animations:
-                params['anim'] =\
-                    assets.Animations.instance.animations[anim_name]
-            elif anim_name in assets.Sprites.instance.sprites:
-                params['anim'] = assets.Sprites.instance.sprites[anim_name]
-            else:
-                raise ValueError(f'{anim_name} is not a recognized asset')
-        spawns.append(Spawn(clazz, params, limit, weight, diff, preds))
-    return Populator(spawns)
-
-@dataclass
 class WorldGenerator:
     """Holds the data for generating worlds"""
     # Generation models
@@ -356,7 +322,7 @@ class WorldGenerator:
     wall_features: Iterable[WallFeature]
     tile_generator: TileGenerator
     tile_list: MutableSequence[dungeon.DungeonTile]
-    populator: Populator
+    populator: spawn.Populator
     exits: Sequence[ExitPlacer]
     max_boredom: float = 16
     vignette_color: Tuple[float, float, float, float] = (.2, .2, .2, 1)
@@ -408,7 +374,9 @@ class WorldGenerator:
         key_item_nm: Optional[str] = None
         key_item: Optional[item.BaseItem] = None
         key_count = 0
-        choices = tuple(filter(lambda x: eval_preds(x.predicates), self.exits))
+        choices = tuple(\
+            filter(\
+                lambda x: spawn.eval_preds(x.predicates), self.exits))
         if len(choices) > 0:
             weights = np.array([ex.weight for ex in choices], dtype=float)
             choice = np.random.choice(choices, p=weights/weights.sum()) # type: ignore
@@ -420,7 +388,7 @@ class WorldGenerator:
             for _ in range(key_count):
                 spawner.spawns.append((
                     furthest_away, item_entity.KeyEntity,
-                    {'item': key_item_nm, 'anim': key_item.icon,
+                    {'item': key_item_nm,
                      'needed': key_count}))
                 hot_path = utils.trace_djikstra(furthest_away, dists)
                 dists = utils.populate_djikstra(costs, hot_path, dists)
@@ -448,10 +416,10 @@ class WorldGenerator:
             boredom = dists[boring_pos[::-1]]
             if not np.isfinite(boredom) or boredom < self.max_boredom:
                 break
-            spawn = self.populator.populate(boring_pos)
-            if spawn is None:
+            chosen_spawn = self.populator.populate(boring_pos)
+            if chosen_spawn is None:
                 break
-            spawner.spawns.append(spawn)
+            spawner.spawns.append(chosen_spawn)
             fun_path = utils.trace_djikstra(boring_pos, dists)
             dists = utils.populate_djikstra(costs, fun_path, dists)
         logging.debug(f'List of spawns = {spawner.spawns}')
@@ -467,7 +435,7 @@ def init_generators() -> None:
             features.append(parse_wall_feature(feature_dict))
         tile_generator = parse_tile_generator(value['tile'])
         tile_list = list(map(dungeon.tiles.__getitem__, value['tiles']))
-        spawns = parse_spawns(value.get('spawns', []))
+        spawns = spawn.parse_spawns(value.get('spawns', []))
         exits = parse_exits(value.get('exits', []))
         boredom = value.get('boredom', 16)
         vignette = cast(Tuple[float, float, float, float],
