@@ -7,12 +7,48 @@
             "palette": [0, 1],
             "border": [1]
         },
+        "features": [
+        {
+            "kind": "dla",
+            "num": 20,
+            "sticky": 0,
+            "out": true
+        }
+        ],
         "tile": {
             "kind": "pass"
         },
         "border": 1,
         "tiles": [
-        "floor", "wall"
+        "floor", "wall", "badfloor"
+        ]
+    },
+    "bspworld": {
+        "wall": {
+            "kind": "bsp",
+            "leaf_size": [6, 6],
+            "join": true,
+            "inside": 0,
+            "border": 2,
+            "outside": 1
+        },
+        "features": [
+        ],
+        "tile": {
+            "kind": "pass"
+        },
+        "border": 1,
+        "tiles": [
+        "floor", "wall", "badfloor"
+        ],
+        "spawns": [
+        ],
+        "boredom": 5,
+        "exits": [
+        {
+            "key": "Key"
+        },
+        {}
         ]
     }
 }

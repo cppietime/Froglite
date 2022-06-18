@@ -1,3 +1,4 @@
+import logging
 from typing import (
     cast,
     ClassVar,
@@ -53,26 +54,26 @@ class PlayerEntity(entity.FightingEntity):
             state.inputstate.keys[pg.K_LSHIFT][inputs.KeyState.PRESSED]\
             or state.inputstate.keys[pg.K_RSHIFT][inputs.KeyState.PRESSED]
         _n_dungeon_pos = self.dungeon_pos[:]
-        if state.inputstate.keys[pg.K_UP][inputs.KeyState.DOWN]\
-                or state.inputstate.keys[pg.K_w][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_UP][inputs.KeyState.PRESSED]\
+                or state.inputstate.keys[pg.K_w][inputs.KeyState.PRESSED]:
             diff = -state.tile_size
             _n_dungeon_pos[1] -= 1
             self.anim.direction = sprite.AnimDir.UP
             prop = 'y'
-        if state.inputstate.keys[pg.K_DOWN][inputs.KeyState.DOWN]\
-                or state.inputstate.keys[pg.K_s][inputs.KeyState.DOWN]:
+        elif state.inputstate.keys[pg.K_DOWN][inputs.KeyState.PRESSED]\
+                or state.inputstate.keys[pg.K_s][inputs.KeyState.PRESSED]:
             diff = state.tile_size
             _n_dungeon_pos[1] += 1
             self.anim.direction = sprite.AnimDir.DOWN
             prop = 'y'
-        if state.inputstate.keys[pg.K_LEFT][inputs.KeyState.DOWN]\
-                or state.inputstate.keys[pg.K_a][inputs.KeyState.DOWN]:
+        elif state.inputstate.keys[pg.K_LEFT][inputs.KeyState.PRESSED]\
+                or state.inputstate.keys[pg.K_a][inputs.KeyState.PRESSED]:
             diff = -state.tile_size
             _n_dungeon_pos[0] -= 1
             self.anim.direction = sprite.AnimDir.LEFT
             prop = 'x'
-        if state.inputstate.keys[pg.K_RIGHT][inputs.KeyState.DOWN]\
-                or state.inputstate.keys[pg.K_d][inputs.KeyState.DOWN]:
+        elif state.inputstate.keys[pg.K_RIGHT][inputs.KeyState.PRESSED]\
+                or state.inputstate.keys[pg.K_d][inputs.KeyState.PRESSED]:
             diff = state.tile_size
             _n_dungeon_pos[0] += 1
             self.anim.direction = sprite.AnimDir.RIGHT
@@ -195,6 +196,7 @@ class PlayerEntity(entity.FightingEntity):
         return True
         
     def entity_die(self, state):
+        logging.debug('Player is dead')
         state.cancel_events()
         def _event(_state, event):
             while _state.locked():

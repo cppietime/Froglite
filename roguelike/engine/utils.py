@@ -60,6 +60,9 @@ class CardinalDirections(Enum):
 def manhattan_dist(from_: Pos, to: Pos) -> int:
     return abs(from_[0] - to[0]) + abs(from_[1] - to[1])
 
+def diag_dist(from_: Pos, to: Pos) -> int:
+    return max(abs(from_[0] - to[0]), abs(from_[1] - to[1]))
+
 AS_State = Tuple[float, float, Pos, Pos]
 
 def a_star(costs: npt.NDArray[np.float64],

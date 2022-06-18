@@ -7,9 +7,12 @@ from typing import (
     cast,
     Callable,
     ClassVar,
+    Dict,
     List,
     Optional,
     Tuple,
+    Type,
+    Union,
     TYPE_CHECKING
 )
 
@@ -25,6 +28,9 @@ from roguelike.engine import (
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
     from roguelike.world.dungeon import DungeonMapState
+
+entities: Dict[str, Type['Entity']] = {}
+Pos = Tuple[int, int]
 
 @dataclass
 class Entity:
@@ -54,12 +60,12 @@ class Entity:
     callbacks_on_update: List[Callable[['Entity',
                                         float,
                                         gamestate.GameState,
-                                        Tuple[int, int]],
+                                        Pos],
                                        None]] = field(default_factory=list)
     anim: Optional[sprite.AnimationState] = None
     lock: awaiting.AwaiterMixin = field(default_factory=awaiting.AwaiterMixin)
     
-    class_anim: ClassVar[Optional[sprite.Animation]] = None
+    class_anim: ClassVar[Union[sprite.Animation, sprite.Sprite, None]] = None
     actionable: ClassVar[bool] = False
     attackable: ClassVar[bool] = False
     interactable: ClassVar[bool] = False
@@ -68,26 +74,35 @@ class Entity:
     particle_backdrop: ClassVar[Optional[sprite.Animation]] = None
     
     def __post_init__(self):
-        if self.class_anim is not None:
+        if isinstance(self.class_anim, sprite.Animation):
             self.anim = sprite.AnimationState(self.class_anim)
+            self.anim.state = sprite.AnimState.IDLE
+            self.anim.direction = sprite.AnimDir.DOWN
         self.rect.w = self.rect.h = self.base_size
         self.rect.x = self.dungeon_pos[0] * self.base_size
         self.rect.y = self.dungeon_pos[1] * self.base_size
-        self.anim.state = sprite.AnimState.IDLE
-        self.anim.direction = sprite.AnimDir.DOWN
+    
+    def be_at(self, dpos: Pos) -> None:
+        self.dungeon_pos = list(dpos)
+        self.rect.w = self.rect.h = self.base_size
+        self.rect.x = self.dungeon_pos[0] * self.base_size
+        self.rect.y = self.dungeon_pos[1] * self.base_size
     
     def render_entity(self,
                       delta_time: float,
                       renderer: 'Renderer',
                       base_offset: Tuple[float, float]) -> None:
         """Default entity rendering technique"""
+        pos = (self.rect.x + base_offset[0], self.rect.y + base_offset[1])
+        size = (self.rect.w, self.rect.h)
         if self.anim is not None:
-            pos = (self.rect.x + base_offset[0], self.rect.y + base_offset[1])
             self.anim.render(renderer,
                              pos,
                              (self.rect.w, self.rect.h),
                              angle=self.rect.rotation)
             self.anim.increment(delta_time)
+        elif isinstance(self.class_anim, sprite.Sprite):
+            renderer.render_sprite(self.class_anim, pos, size)
     
     def render_entity_post(self,
                       delta_time: float,
@@ -99,7 +114,7 @@ class Entity:
     def update_entity(self,
                       delta_time: float,
                       state: gamestate.GameState,
-                      player_pos: Tuple[int, int]) -> None:
+                      player_pos: Pos) -> None:
         for callback in self.callbacks_on_update:
             callback(self, delta_time, state, player_pos)
     
@@ -112,30 +127,31 @@ class Entity:
                      reset_time_to: Optional[float] = None,
                      blocking: bool = True) -> None:
         """Helper function to start an animation and reset state afterwards"""
-        if state_at_end is not None:
-            tweens.append((duration, tween.Tween(self.anim,
-                                                 'state',
-                                                 0,
-                                                 state_at_end,
-                                                 0,
-                                                 step=True)))
-            duration = 0
-        if speed_at_end is not None:
-            tweens.append((duration, tween.Tween(self.anim,
-                                                 'speed',
-                                                 0,
-                                                 speed_at_end,
-                                                 0,
-                                                 step=True)))
-            duration = 0
-        if reset_time_to is not None:
-            tweens.append((duration, tween.Tween(self.anim,
-                                                 'time',
-                                                 0,
-                                                 reset_time_to,
-                                                 0,
-                                                 step=True)))
-            duration = 0
+        if self.anim is not None:
+            if state_at_end is not None:
+                tweens.append((duration, tween.Tween(self.anim,
+                                                     'state',
+                                                     0,
+                                                     state_at_end,
+                                                     0,
+                                                     step=True)))
+                duration = 0
+            if speed_at_end is not None:
+                tweens.append((duration, tween.Tween(self.anim,
+                                                     'speed',
+                                                     0,
+                                                     speed_at_end,
+                                                     0,
+                                                     step=True)))
+                duration = 0
+            if reset_time_to is not None:
+                tweens.append((duration, tween.Tween(self.anim,
+                                                     'time',
+                                                     0,
+                                                     reset_time_to,
+                                                     0,
+                                                     step=True)))
+                duration = 0
         anim = tween.Animation(tweens)
         if blocking:
             anim.attach(state)
@@ -255,8 +271,9 @@ class FightingEntity(Entity):
         damage = self._melee_attack_logic(state, target)
         state = cast('DungeonMapState', state)
         self._melee_attack_logic(state, target)
-        my_anim = cast(sprite.AnimationState, self.anim)
-        my_anim.state = sprite.AnimState.ATTACK
+        my_anim = self.anim
+        if my_anim is not None:
+            my_anim.state = sprite.AnimState.ATTACK
         other_x = target.dungeon_pos[0] * state.tile_size
         other_y = target.dungeon_pos[1] * state.tile_size
         def _script(_state, event):
@@ -298,7 +315,7 @@ class ActingEntity(FightingEntity):
     
     def expend_energy(self,
                       state: gamestate.GameState,
-                      player_pos: Tuple[int, int]) -> None:
+                      player_pos: Pos) -> None:
         while self.energy >= self.action_cost:
             self.energy -= self.action_cost
             self.take_action(state, player_pos)
@@ -311,7 +328,7 @@ class ActingEntity(FightingEntity):
     
     def take_action(self,
                     state: gamestate.GameState,
-                    player_pos: Tuple[int, int]) -> None:
+                    player_pos: Pos) -> None:
         pass
     
     hit_bounces: ClassVar[float] = 2.
@@ -357,11 +374,11 @@ class EnemyEntity(ActingEntity):
     
     def chase_player(self,
                      state: gamestate.GameState,
-                     player_pos: Tuple[int, int],
+                     player_pos: Pos,
                      chase_radius: int) -> bool:
         state = cast('DungeonMapState', state)
-        my_anim = cast(sprite.AnimationState, self.anim)
-        path = state.dungeon_map.a_star(tuple(self.dungeon_pos),
+        my_anim = self.anim
+        path = state.dungeon_map.a_star(cast(Pos, tuple(self.dungeon_pos)),
                                         player_pos,
                                         chase_radius)
         if path is None:
@@ -373,24 +390,29 @@ class EnemyEntity(ActingEntity):
             return True
         next_step = path[1]
         # Animations and motion
-        my_anim.state = sprite.AnimState.WALK
+        anim_state = sprite.AnimState.WALK
         prop = None
         if next_step[0] < self.dungeon_pos[0]:
-            my_anim.direction = sprite.AnimDir.LEFT
+            anim_dir = sprite.AnimDir.LEFT
             prop = 'x'
         elif next_step[0] > self.dungeon_pos[0]:
-            my_anim.direction = sprite.AnimDir.RIGHT
+            anim_dir = sprite.AnimDir.RIGHT
             prop = 'x'
         elif next_step[1] < self.dungeon_pos[1]:
-            my_anim.direction = sprite.AnimDir.UP
+            anim_dir = sprite.AnimDir.UP
             prop = 'y'
         elif next_step[1] > self.dungeon_pos[1]:
-            my_anim.direction = sprite.AnimDir.DOWN
+            anim_dir = sprite.AnimDir.DOWN
             prop = 'y'
+        if my_anim is not None:
+            my_anim.state = anim_state
+            my_anim.direction = anim_dir
         if prop is not None\
-                and state.dungeon_map.move_entity(tuple(self.dungeon_pos),
-                                                  next_step):
-            my_anim.speed = 1
+                and state.dungeon_map.move_entity(
+                    cast(Pos, tuple(self.dungeon_pos)),
+                    next_step):
+            if my_anim is not None:
+                my_anim.speed = 1
             self.animate_stepping_to(state,
                                      (self.dungeon_pos[0] * state.tile_size,
                                       self.dungeon_pos[1] * state.tile_size),

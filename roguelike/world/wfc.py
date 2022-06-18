@@ -6,6 +6,7 @@ from collections import (
     deque
 )
 from dataclasses import dataclass
+import logging
 import math
 import random
 import time
@@ -378,7 +379,7 @@ class WaveFunction:
                            _size_numba,
                            _offsets_numba,
                            self.weights)
-            print('jit_time =', (time.time_ns() - start_time) * 1e-9)
+            logging.info(f'jit_time = {(time.time_ns() - start_time) * 1e-9}')
             return list(fast_lst)
 
         while True:
@@ -451,5 +452,5 @@ class WaveFunction:
                     history.append((n_xy, other_state, False))
                     states[n_xy] = intersect
                     frontier.append(n_xy)
-        print('int_time =', (time.time_ns() - start_time) * 1e-9)
+        logging.info(f'int_time = {(time.time_ns() - start_time) * 1e-9}')
         return list(map(lambda s: next(iter(s)), states))

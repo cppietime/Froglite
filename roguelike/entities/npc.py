@@ -437,7 +437,8 @@ class NPCEntity(entity.Entity):
         if 'anim' in kwargs:
             self.class_anim = kwargs.pop('anim')
         super().__init__(*args, passable=False, **kwargs)
-        self.anim.speed = 0
+        if self.anim is not None:
+            self.anim.speed = 0
     
     def interact(self,
                  current_state: 'GameState',
@@ -460,6 +461,8 @@ class NPCEntity(entity.Entity):
             state.manager.push_state(new_state)
             yield False
         current_state.queue_event(event_manager.Event(_event))
+
+entity.entities['NPCEntity'] = NPCEntity
 
 chats: Dict[str, ChatPrompt] = {}
 

@@ -152,7 +152,7 @@ class ItemSlotSubscreen(ui.PoppableMenu):
     panel_w: ClassVar[float] = 1440 / 2
     panel_h: ClassVar[float] = 1080 / 3
     item_name_size: ClassVar[float] = 1440 / 4
-    item_name_margin: ClassVar[float] = 30.
+    item_name_margin: ClassVar[float] = 10.
     item_name_padding: ClassVar[float] = 15.
     item_row_height: ClassVar[float] = 100.
     icon_size: ClassVar[float] = 100.
@@ -207,8 +207,6 @@ class ItemSlotSubscreen(ui.PoppableMenu):
         self.menu_widget.scroll = is_big
         self.menu_widget.buffer_display = 1 if is_big else 0
         self.menu_widget.zero_point = self.scroll_zero_point if is_big else 0
-        
-        print(self.mainholder.scroll, self.mainholder.buffer_display, len(self.slot), self.scroll_threshold)
         
         if self.menu_widget.selection >= len(self.slot) and len(self.slot) > 0:
             self.menu_widget.selection = len(self.slot) - 1

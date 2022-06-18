@@ -39,14 +39,14 @@ class PursuantEnemy(entity.EnemyEntity):
                          action_cost=action_cost,
                          max_hp=max_hp,
                          **kwargs)
-        self.anim.speed = 0
+        if self.anim is not None:
+            self.anim.speed = 0
     
     def attack(self,
                state: 'DungeonMapState',
                target: entity.Entity) -> None:
-        print(f'{self.name} attacks {target.name}!')
-        my_anim = cast(sprite.AnimationState, self.anim)
-        my_anim.state = sprite.AnimState.ATTACK
+        if self.anim is not None:
+            self.anim.state = sprite.AnimState.ATTACK
         tpos = target.dungeon_pos
         dprop = 'x' if tpos[0] != self.dungeon_pos[0] else 'y'
         dprop_i = 1 if dprop == 'y' else 0

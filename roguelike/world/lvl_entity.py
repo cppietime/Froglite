@@ -1,3 +1,4 @@
+import logging
 import threading
 from typing import (
     cast,
@@ -22,6 +23,11 @@ if TYPE_CHECKING:
 class LadderEntity(entity.Entity):
     def __init__(self, *args, **kwargs):
         self.size = kwargs.pop('size')
+        self.key_item = kwargs.pop('key_item', None)
+        self.key_count = kwargs.pop('key_count', 0)
+        self.active = False
+        
+        # Temporary debug
         self.class_anim = assets.Animations.instance.player
         super().__init__(*args, passable=True, **kwargs)
         self.callbacks_on_update.append(LadderEntity.move_callback)
@@ -30,32 +36,51 @@ class LadderEntity(entity.Entity):
                       delta_time: float,
                       state: 'GameState',
                       player_pos: Tuple[int, int]) -> None:
+        dms = cast(dungeon.DungeonMapState, state)
+        player_ent = dms.dungeon_map.player
         if player_pos == self.dungeon_pos:
-            def _script(_state, event):
-                dms = cast(dungeon.DungeonMapState, _state)
-                while dms.locked():
-                    yield True
-                def _thrd():
-                    world_gen_name = assets.variables['world_gen']
-                    wgen = world_gen.world_generators[world_gen_name]
-                    dms.generate_from(wgen, self.size)
-                thread = threading.Thread(target = _thrd)
-                thread.start()
-                anim = tween.Animation([
-                    (0, tween.Tween(dms, 'blackout', 0, 1, .5))
-                ])
-                anim.attach(dms)
-                dms.begin_animation(anim)
-                dms.lock()
-                while thread.is_alive():
-                    yield True
-                dms.unlock()
-                dms.enter_loaded_room()
-                anim = tween.Animation([
-                    (0, tween.Tween(dms, 'blackout', 1, 0, .5))
-                ])
-                anim.attach(dms)
-                dms.begin_animation(anim)
-                yield False
-            state.queue_event(event_manager.Event(_script))
+            works = self.key_item is None
+            if not works:
+                works = player_ent.inventory.take_item(self.key_item,
+                                                       self.key_count)
+            if works:
+                self.to_next_room(dms)
+            elif not self.active:
+                self.active = True
+                self.pain_particle(
+                    state,
+                    f'Need {self.key_item.name} x{self.key_count}',
+                    (1, 1, 0, 1))
+        else:
+            self.active = False
+    
+    def to_next_room(self, state: dungeon.DungeonMapState) -> None:
+        logging.debug('Will move player to next room')
+        def _script(_state, event):
+            while _state.locked():
+                yield True
+            assets.variables['difficulty'] += 1
+            def _thrd():
+                world_gen_name = assets.variables['world_gen']
+                wgen = world_gen.world_generators[world_gen_name]
+                _state.generate_from(wgen, self.size)
+            thread = threading.Thread(target = _thrd)
+            thread.start()
+            anim = tween.Animation([
+                (0, tween.Tween(_state, 'blackout', 0, 1, .5))
+            ])
+            anim.attach(_state)
+            _state.begin_animation(anim)
+            _state.lock()
+            while thread.is_alive():
+                yield True
+            _state.unlock()
+            _state.enter_loaded_room()
+            anim = tween.Animation([
+                (0, tween.Tween(_state, 'blackout', 1, 0, .5))
+            ])
+            anim.attach(_state)
+            _state.begin_animation(anim)
+            yield False
+        state.queue_event(event_manager.Event(_script))
         

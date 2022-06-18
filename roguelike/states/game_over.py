@@ -1,3 +1,4 @@
+import logging
 from typing import (
     ClassVar,
     TYPE_CHECKING
@@ -13,6 +14,8 @@ from roguelike.states import ui
 if TYPE_CHECKING:
     from roguelike.engine.sprite import Sprite
     from roguelike.engine.text import CharBank
+
+reset_func = None
 
 class GameOverState(ui.PoppableMenu):
     header_scale: ClassVar[float]
@@ -78,11 +81,14 @@ class GameOverState(ui.PoppableMenu):
         self.begin_animation(anim)
     
     def restart_game(self):
-        # print("I don't think we can restart until I have some kind of map generation")
+        logging.debug('Restarting game')
+        if reset_func != None:
+            reset_func()
         self.manager.state_stack[-2].respawn()
         self.manager.pop_state()
     
     def quit_game(self):
+        logging.debug('Quitting game')
         self.manager.state_stack.clear()
     
     @classmethod

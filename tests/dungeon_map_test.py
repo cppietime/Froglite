@@ -1,4 +1,5 @@
 import dataclasses
+import logging
 import random
 import threading
 
@@ -21,13 +22,15 @@ from roguelike.states import (
 )
 from roguelike.entities import (
     entity,
+    item_entity,
     player,
     slow_chaser,
     npc
 )
 from roguelike.bag import (
     consumables,
-    inventory_state
+    inventory_state,
+    keys
 )
 from roguelike.world import (
     dungeon,
@@ -42,6 +45,8 @@ tile_floor = 0
 tile_wall = 1
 tile_clear = 0
 meta_map = [0, 1]
+
+logging.basicConfig(level=logging.DEBUG)
 
 use_weights &= not use_jit
 samp_size, samp_arr = utils.load_grid('map_sample.png')
@@ -61,7 +66,7 @@ inputstate = inputs.InputState()
 manager = gamestate.GameStateManager(inputstate=inputstate)
 
 assets.load_assets(rend, "assets.json")
-assets.variables['world_gen'] = 'mainworld'
+assets.variables['world_gen'] = 'bspworld'
 
 # Set settings
 tile_size = settings.BASE_TILE_SIZE
@@ -75,7 +80,6 @@ inventory_state.InventoryBaseScreen.init_globs()
 game_over.GameOverState.init_resources()
 entity.Entity.particle_backdrop = assets.Animations.instance.shadow
 dungeon.init_tiles()
-world_gen.init_generators()
 
 # tile_anims = sprite.AnimationState(assets.Animations.instance.tile)
 # wall_anims = sprite.AnimationState(assets.Animations.instance.wall)
@@ -83,7 +87,9 @@ world_gen.init_generators()
 # wall = dungeon.DungeonTile(wall_anims, False)
 
 consumables.init_items()
+keys.init_items()
 npc.init_chats()
+world_gen.init_generators()
 
 # Setup dungeon map
 # gen = wfc.WaveFunction([set(f.values()),
@@ -92,7 +98,7 @@ npc.init_chats()
 
 # wave_gen_class = world_gen.WallGeneratorWFC(samp_size, samp_arr, pat_size, meta_map, {1})
 # gener = world_gen.WorldGenerator(wave_gen_class, [], world_gen.TileGeneratorPassThru(), [dungeon.tiles['floor'], dungeon.tiles['wall']], border=1)
-gener = world_gen.world_generators['mainworld']
+gener = world_gen.world_generators['bspworld']
 
 ceiling = [tile_wall] * map_size[0]
 space = [tile_wall] + [tile_floor] * (map_size[0] - 2) + [tile_wall]
@@ -144,9 +150,16 @@ def _thread_old():
 
     state = dungeon.DungeonMapState(dungeon=dungeon_map, tile_size=tile_size)
     manager.push_state(state)
+def reset_func():
+    assets.variables['coins'] = 0
+    assets.variables['difficulty'] = 0
+game_over.reset_func = reset_func
 def _thread():
+    game_over.reset_func()
     dmap = gener.generate_world(map_size)
-    state = dungeon.DungeonMapState(dungeon=dmap, tile_size=tile_size)
+    state = dungeon.DungeonMapState(tile_size=tile_size,
+                                    base_generator=gener,
+                                    base_size=map_size)
     manager.push_state(state)
 thread = threading.Thread(target=_thread)
 thread.start()

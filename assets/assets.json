@@ -6,6 +6,7 @@
         "consumables",
         "chats",
         "tiles",
-        "worldgen"
+        "worldgen",
+        "keys"
     ]
 }

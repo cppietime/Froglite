@@ -39,6 +39,8 @@ from roguelike.entities import (
 )
 from roguelike.bag import consumables
 
+Pos = Tuple[int, int]
+
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
     from roguelike.world.world_gen import WorldGenerator
@@ -106,7 +108,7 @@ class DungeonParticle:
 class DungeonMapSpawner:
     """Base from which to generate dungeon maps"""
     size: Tuple[int, int]
-    tiles: Sequence[DungeonTile]
+    tiles: MutableSequence[DungeonTile]
     player_pos: Tuple[int, int]
     tile_map: List[int] = field(default_factory=list)
     vignette_color: Tuple[float, float, float, float] = (.3, .25, 4, 1)
@@ -114,16 +116,23 @@ class DungeonMapSpawner:
         field(default_factory=list)
     border: int = -1
     
-    def spawn_map(self):
+    def spawn_map(self, old_player: player.PlayerEntity=None):
         dungeon_map = DungeonMap(self.size, self.tiles, self.vignette_color, self.border)
         dungeon_map.tile_map = list(self.tile_map)
         for pos, ent_cls, kwargs in self.spawns:
             ent = ent_cls(dungeon_pos=list(pos), **kwargs)
             dungeon_map.place_entity(ent)
-        dungeon_map.player =\
-            player.PlayerEntity(dungeon_pos=list(self.player_pos))
-        dungeon_map.player.inventory.give_item(consumables.items['Ancient sword of Coriander'], 7)
-        dungeon_map.player.inventory.give_item(consumables.items['Ichor'], 7)
+        if old_player is not None:
+            old_player.be_at(self.player_pos)
+            dungeon_map.player = old_player
+        else:
+            dungeon_map.player =\
+                player.PlayerEntity(dungeon_pos=list(self.player_pos))
+            
+            # For debugging purposes
+            dungeon_map.player.inventory.give_item(consumables.items['Ancient sword of Coriander'], 7)
+            dungeon_map.player.inventory.give_item(consumables.items['Ichor'], 7)
+        
         return dungeon_map
 
 class DungeonMap:
@@ -137,7 +146,7 @@ class DungeonMap:
     """
     def __init__(self,
                  size: Tuple[int, int],
-                 tiles: List[DungeonTile],
+                 tiles: MutableSequence[DungeonTile],
                  vignette_color: Tuple[float, float, float, float] =\
                     (.3, .25, .4, 1),
                  border: int = -1):
@@ -146,9 +155,8 @@ class DungeonMap:
         self.tile_map: List[int] = []
         self.foreground: Dict[Tuple[int, int], int] =\
             defaultdict(lambda: -1)
-        self.entities: Dict[Tuple[int, int], Optional[entity.Entity]] =\
-            defaultdict(lambda: None)
-        self.player: entity.Entity = None # type: ignore
+        self.entities: Dict[Tuple[int, int], entity.Entity] = {}
+        self.player: player.PlayerEntity = None # type: ignore
         self.vignette_color = vignette_color
         self.border = border
     
@@ -214,14 +222,14 @@ class DungeonMap:
         return True
     
     def place_entity(self, ent: entity.Entity) -> bool:
-        check_pos = cast(Tuple[int, int], tuple(ent.dungeon_pos))
+        check_pos = cast(Pos, tuple(ent.dungeon_pos))
         if not self.is_free(check_pos):
             return False
         self.entities[check_pos] = ent
         return True
     
     def remove_entity(self, ent: entity.Entity) -> None:
-        check_pos = cast(Tuple[int, int], tuple(ent.dungeon_pos))
+        check_pos = cast(Pos, tuple(ent.dungeon_pos))
         if self.entities.get(check_pos, None) is ent:
             self.entities.pop(check_pos)
 
@@ -241,10 +249,13 @@ class DungeonMapState(gamestate.GameState):
     font: ClassVar[text.CharBank]
     base_text_scale: ClassVar[float]
     base_tile_size: ClassVar[float] = 64
+    
+    dungeon_map: DungeonMap
 
     def __init__(self, *args, **kwargs):
-        self.dungeon_map_spec = kwargs.pop('dungeon')
         self.tile_size = kwargs.pop('tile_size')
+        self.starting_generator = kwargs.pop('base_generator')
+        self.starting_size = kwargs.pop('base_size')
         super().__init__(*args, **kwargs)
         self.camera = tween.AnimatableMixin()
         self.particles: List[DungeonParticle] = []
@@ -260,9 +271,11 @@ class DungeonMapState(gamestate.GameState):
         self.dungeon_map_spec = spawner
     
     def enter_loaded_room(self) -> None:
-        self.dungeon_map = self.dungeon_map_spec.spawn_map()
+        self.dungeon_map = self.dungeon_map_spec.spawn_map(
+            self.dungeon_map.player)
     
     def respawn(self):
+        self.generate_from(self.starting_generator, self.starting_size)
         self.dungeon_map = self.dungeon_map_spec.spawn_map()
         self.blackout = 0.
     
@@ -303,12 +316,12 @@ class DungeonMapState(gamestate.GameState):
                     tile = self.dungeon_map.tile_at((x, y))
                     if tile is not None:
                         if tile.special_render:
-                            tile.render(delta_time,
+                            tile.render(delta_time, # type: ignore
                                         renderer,
                                         (x, y),
                                         self.tile_size)
                         else:
-                            dt = 0
+                            dt = 0.
                             if tile.offset_type == RandomAnimType.X:
                                 dt += x * tile.offset_power
                             elif tile.offset_type == RandomAnimType.Y:
@@ -421,7 +434,9 @@ class DungeonMapState(gamestate.GameState):
         # Update entities
         player_pos = self.dungeon_map.player.dungeon_pos
         for entity in self.dungeon_map.entities.values():
-            entity.update_entity(delta_time, self, player_pos)
+            entity.update_entity(delta_time,
+                                 self,
+                                 cast(Pos, player_pos))
             
         # Update player
         self.dungeon_map.player.update_entity(delta_time, self, player_pos)
@@ -440,8 +455,9 @@ class DungeonMapState(gamestate.GameState):
                 sees_player = actor.detection_radius < 0
                 if not sees_player:
                     sees_player =\
-                        self.dungeon_map._diag_dist(actor.dungeon_pos,
-                                                         player_pos)\
+                        self.dungeon_map._diag_dist(
+                                cast(Pos, actor.dungeon_pos),
+                                player_pos)\
                              <= actor.detection_radius
                 if sees_player:
                     actor.give_energy(1.)

@@ -69,7 +69,7 @@ class Tween:
     interpolation: Callable[[float], float] = linear
     
     def __post_init__(self):
-        assert self.step or type(self.end) in (int, float)
+        assert self.step or np.isscalar(self.end)
     
     def is_active(self) -> bool:
         """Returns False when this tween is over"""

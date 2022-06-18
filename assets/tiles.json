@@ -5,6 +5,11 @@
         "otype": "X_MINUS_Y",
         "opow": 0.25
     },
+    "badfloor": {
+        "animation": "tile",
+        "passable": true,
+        "opow": 0
+    },
     "wall": {
         "animation": "wall",
         "passable": false
