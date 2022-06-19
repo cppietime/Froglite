@@ -1,0 +1,9 @@
+{
+    "Fireball": {
+        "animation": "player",
+        "reach": 4,
+        "attack": 10,
+        "icon": "potion",
+        "description": "Fireball spell"
+    }
+}

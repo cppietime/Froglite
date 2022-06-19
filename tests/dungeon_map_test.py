@@ -31,6 +31,7 @@ from roguelike.bag import (
     consumables,
     inventory_state,
     keys,
+    spells,
     weapons
 )
 from roguelike.world import (
@@ -89,6 +90,7 @@ dungeon.init_tiles()
 
 consumables.init_items()
 keys.init_items()
+spells.init_items()
 weapons.init_items()
 npc.init_chats()
 world_gen.init_generators()

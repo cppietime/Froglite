@@ -103,8 +103,8 @@ class SpellItem(EquipableItem):
     """Not really an item but it can be accessed through the
     player's inventory all the same
     """
-    on_use: Callable[['GameState', Optional['GameState'], 'FightingEntity'],
-                     None]
+    def on_use(self, state: 'GameState', user: 'FightingEntity') -> None:
+        pass
     
     itemslot = ItemSlot.SPELLS
     equip_slot = EquipmentSlot.SPELL

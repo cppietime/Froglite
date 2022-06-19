@@ -8,6 +8,7 @@
         "tiles",
         "worldgen",
         "keys",
-        "weapons"
+        "weapons",
+        "spells"
     ]
 }

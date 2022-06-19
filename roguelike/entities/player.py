@@ -49,6 +49,9 @@ class PlayerEntity(entity.FightingEntity):
             inventory=self.inventory)
         if 'coins' not in assets.variables:
             assets.variables['coins'] = 0
+        
+        # DEBUGGING
+        self.inventory.give_item(item.items['Fireball'], 1)
     
     walk_length: ClassVar[float] = .25
     
@@ -105,8 +108,8 @@ class PlayerEntity(entity.FightingEntity):
                 state.let_entities_move()
                 yield False
             state.start_event(event_manager.Event(_event))
-        if state.inputstate.keys[pg.K_LCTRL][inputs.KeyState.DOWN]\
-                or state.inputstate.keys[pg.K_RCTRL][inputs.KeyState.DOWN]:
+            return
+        if state.inputstate.keys[pg.K_RETURN][inputs.KeyState.DOWN]:
             # Attempt to attack
             t_x, t_y = self.dungeon_pos
             if self.anim.direction == sprite.AnimDir.UP:
@@ -127,13 +130,19 @@ class PlayerEntity(entity.FightingEntity):
                     target_ent.interact(state, self)
                     return
         # Open inventory
-        if state.inputstate.keys[pg.K_RETURN][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_BACKSPACE][inputs.KeyState.DOWN]:
             def _menu(state, event):
                 while state.locked():
                     yield True
                 state.manager.push_state(self.inv_state)
                 yield False
             state.queue_event(event_manager.Event(_menu))
+            return
+        if state.inputstate.keys[pg.K_LCTRL][inputs.KeyState.DOWN]\
+                or state.inputstate.keys[pg.K_RCTRL][inputs.KeyState.DOWN]:
+            spell_item = self.inventory[item.EquipmentSlot.SPELL]
+            if spell_item is not None:
+                spell_item.on_use(state, self)
     
     def render_entity(self, delta_time, renderer, base_offset):
         super().render_entity(delta_time, renderer, base_offset)

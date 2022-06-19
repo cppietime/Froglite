@@ -268,6 +268,14 @@ class FightingEntity(Entity):
         dfn = target.effective_defense()
         return max(1, int(round(atk / dfn)))
     
+    def _spell_attack_logic(self,
+                            magic: float,
+                            state: gamestate.GameState,
+                            target: 'FightingEntity') -> int:
+        atk = magic
+        dfn = target.effective_defense()
+        return max(1, int(round(atk / dfn)))
+    
     attack_length: ClassVar[float] = .25
     
     def melee_attack(self,
@@ -383,7 +391,12 @@ class EnemyEntity(ActingEntity):
         self.gold_drop = cast(int, kwargs.pop('gold', 0))
         drop_dict = kwargs.pop('drops', [])
         self.drops = spawn.parse_spawns(drop_dict)
+        atk_mul = cast(float, kwargs.pop('atk_mul', 0.))
+        def_mul = cast(float, kwargs.pop('def_mul', 0.))
         super().__init__(*args, **kwargs)
+        difficulty: int = assets.variables['difficulty']
+        self.attack_stat *= 1 + atk_mul * difficulty
+        self.defense_stat *= 1 + def_mul * difficulty
     
     step_len_s: ClassVar[float] = .25
     

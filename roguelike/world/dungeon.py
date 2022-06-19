@@ -95,6 +95,7 @@ class DungeonParticle:
             self.animstate.render(renderer,
                                   pos,
                                   (self.rect.w, self.rect.h))
+            self.animstate.increment(delta_time)
         if self.msg:
             assert self.font is not None
             self.font.draw_str_in(self.msg,
@@ -474,9 +475,10 @@ class DungeonMapState(gamestate.GameState):
                        msg: Optional[str] = None,
                        text_color: Tuple[float, float, float, float]=\
                            (0, 0, 0, 0),
-                       animation: Optional[sprite.Animation] = None) -> None:
+                       animation: Optional[sprite.Animation] = None,
+                       **kwargs) -> None:
         animstate = None if animation is None\
-            else sprite.AnimationState(animation)
+            else sprite.AnimationState(animation, **kwargs)
         particle = DungeonParticle(
             rect, motion, animstate, msg, text_color, self.font)
         self.particles.append(particle)
