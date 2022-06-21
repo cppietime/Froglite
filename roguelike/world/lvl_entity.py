@@ -26,6 +26,7 @@ class LadderEntity(entity.Entity):
         self.size = kwargs.pop('size')
         self.key_item = kwargs.pop('key_item', None)
         self.key_count = kwargs.pop('key_count', 0)
+        self.target_type: Optional[str] = kwargs.pop('target', None)
         self.active = False
         self.done_message = False
         
@@ -54,6 +55,7 @@ class LadderEntity(entity.Entity):
             if works:
                 self.to_next_room(dms)
             elif not self.active:
+                assets.Sounds.instance.ding.play()
                 self.active = True
                 self.pain_particle(
                     state,
@@ -64,17 +66,24 @@ class LadderEntity(entity.Entity):
     
     def to_next_room(self, state: dungeon.DungeonMapState) -> None:
         logging.debug('Will move player to next room')
+        assets.Sounds.instance.budu.play()
         warp(state,
-             world_gen.world_generators[assets.variables['world_gen']],
+             self.target_type or assets.variables['world_gen'],
              self.size)
 
 def warp(state: dungeon.DungeonMapState,
-         world_type: 'WorldGenerator',
-         size: Tuple[int, int]) -> None:
+         world_type_name: str,
+         size: Tuple[int, int],
+         reset: bool=False) -> None:
     def _script(_state, event):
+        world_type = world_gen.world_generators[world_type_name]
         while _state.locked():
             yield True
-        assets.variables['difficulty'] += 1
+        if not reset:
+            assets.variables['difficulty'] += 1
+        assets.persists['highests'][world_type_name] =\
+            max(assets.persists['highests'].get(world_type_name, 0),\
+                assets.variables['difficulty'])
         def _thrd():
             _state.generate_from(world_type, size)
         thread = threading.Thread(target = _thrd)
@@ -89,6 +98,10 @@ def warp(state: dungeon.DungeonMapState,
             yield True
         _state.unlock()
         _state.enter_loaded_room()
+        if not assets.persists['unlocked'].get(world_type_name, False):
+            _state.dungeon_map.player.pain_particle(
+                _state, f'Unlocked {world_type_name}!')
+            assets.persists['unlocked'][world_type_name] = True
         anim = tween.Animation([
             (0, tween.Tween(_state, 'blackout', 1, 0, .5))
         ])

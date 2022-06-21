@@ -140,6 +140,7 @@ class PlayerEntity(entity.FightingEntity):
             return
         if state.inputstate.keys[pg.K_LCTRL][inputs.KeyState.DOWN]\
                 or state.inputstate.keys[pg.K_RCTRL][inputs.KeyState.DOWN]:
+            # Use magic
             spell_item = self.inventory[item.EquipmentSlot.SPELL]
             if spell_item is not None:
                 spell_item.on_use(state, self)
@@ -211,6 +212,7 @@ class PlayerEntity(entity.FightingEntity):
         
     def entity_die(self, state):
         logging.debug('Player is dead')
+        assets.Sounds.instance.ah.play()
         state.cancel_events()
         def _event(_state, event):
             while _state.locked():
@@ -265,6 +267,7 @@ class PlayerEntity(entity.FightingEntity):
         def _event(_state, event):
             anim.attach(_state)
             _state.begin_animation(anim)
+            assets.Sounds.instance.pow.play()
             target.get_hit(state, self, damage)
             while _state.locked():
                 yield True
@@ -284,7 +287,14 @@ class PlayerEntity(entity.FightingEntity):
         armor = self.inventory[item.EquipmentSlot.ARMOR]
         def_mul = 1
         if armor is not None:
-            def_mul = weapon.def_mul
+            def_mul = armor.def_mul
         return max(1, int(round(super().effective_defense() * def_mul)))
+        
+    def effective_magic(self):
+        charm = self.inventory[item.EquipmentSlot.CHARM]
+        pow_mul = 1
+        if charm is not None:
+            pow_mul = charm.pow_mul
+        return max(1, int(round(super().effective_magic() * pow_mul)))
     
     

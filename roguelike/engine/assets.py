@@ -16,6 +16,7 @@ from typing import (
 )
 
 import moderngl as mgl # type: ignore
+import pygame as pg
 
 from roguelike.engine import (
     sprite
@@ -31,7 +32,7 @@ def asset_path(base_path: str) -> str:
         basedir = os.path.join(os.path.split(__file__)[0],
                                os.pardir,
                                os.pardir)
-    return os.path.join(basedir, 'assets', base_path)
+    return os.path.abspath(os.path.join(basedir, 'assets', base_path))
 
 class Textures:
     instance: 'Textures'
@@ -181,8 +182,26 @@ class Animations:
             anim_in = cast(Dict[str, _AnimState_In], value['animation'])
             Animations.instance.animation(name, anim_in, speed)
 
+class Sounds:
+    instance: 'Sounds'
+    def __init__(self):
+        self.sounds: Dict[str, pg.mixer.Sound] = {}
+    
+    def __getattr__(self, name: str) -> pg.mixer.Sound:
+        return self.sounds[name]
+    
+    @staticmethod
+    def load_sounds(source: Dict[str, Any]) -> None:
+        Sounds.instance = Sounds()
+        for name, path in source.items():
+            path = asset_path(path)
+            sound = pg.mixer.Sound(path)
+            Sounds.instance.sounds[name] = sound
+
 residuals: Dict[str, Any] = {}
 variables: Dict[str, Any] = collections.defaultdict(lambda: None)
+persists: Dict[str, Any] = collections.defaultdict(lambda: None)
+running = True
 
 def load_assets(renderer: 'Renderer', source: str) -> None:
     global residuals
@@ -198,6 +217,35 @@ def load_assets(renderer: 'Renderer', source: str) -> None:
                            residuals.pop('textures')))
     Sprites.load_sprites(cast(Dict[str, Dict[str, Any]],
                          residuals.pop('sprites')))
-    Animations.load_animations(cast(Dict[str, Any], residuals.pop('animations')))
-    # residuals = tdata
-    
+    Animations.load_animations(cast(Dict[str, Any],
+                               residuals.pop('animations')))
+    Sounds.load_sounds(residuals.pop('sounds'))
+
+def save_path():
+    if hasattr(sys, 'frozen'):
+        basedir = os.path.abspath(os.path.expanduser('~'))
+        basedir = os.path.join(basedir, '.this_game')
+        if not os.path.exists(basedir):
+            os.mkdir(basedir)
+    else:
+        basedir = os.path.join(os.path.split(__file__)[0],
+                               os.pardir,
+                               os.pardir)
+    return os.path.abspath(os.path.join(basedir, 'save'))
+
+def load_save():
+    global variables, persists
+    save_file = save_path()
+    if not os.path.exists(save_file):
+        return
+    with open(save_file) as file:
+        vp = json.load(file)
+    saved_v = vp['variables']
+    saved_p = vp['persists']
+    variables.update(saved_v)
+    persists.update(saved_p)
+
+def save_save():
+    vp = {'variables': variables, 'persists': persists}
+    with open(save_path(), 'w') as file:
+        json.dump(vp, file)

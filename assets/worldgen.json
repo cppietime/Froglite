@@ -39,6 +39,22 @@
             "outside": 1
         },
         "features": [
+        {
+            "kind": "cellular",
+            "clear_below": 3,
+            "fill_from": 4,
+            "clear_with": 0,
+            "fill_with": 1,
+            "full": [1],
+            "iterations": 1
+        },
+        {
+            "kind": "join",
+            "passable": [0],
+            "inside": 0,
+            "outside": 1,
+            "border": 1
+        }
         ],
         "tile": {
             "kind": "pass"
@@ -85,7 +101,7 @@
             "class": "NPCEntity",
             "animation": "player",
             "chat": "warp",
-            "weight": 1
+            "weight": 10
         }
         ],
         "boredom": 5,
@@ -94,5 +110,47 @@
             "key": "Key"
         }
         ]
+    },
+    "whitenoise": {
+        "wall": {
+            "kind": "white",
+            "tiles": [0, 1]
+        },
+        "features": [
+        {
+            "kind": "cellular",
+            "full": [1],
+            "clear_with": 0,
+            "fill_with": 1,
+            "clear_below": 4,
+            "fill_from": 5,
+            "iterations": 6
+        },
+        {
+            "kind": "join",
+            "passable": [0],
+            "inside": 0,
+            "outside": 1,
+            "border": 1
+        }
+        ],
+        "tile": {
+            "kind": "pass"
+        },
+        "border": 1,
+        "tiles": ["floor", "wall"]
+    },
+    "perlin": {
+        "wall": {
+            "kind": "perlin",
+            "tiles": [0, 1, 1],
+            "scale": [4, 4]
+        },
+        "features": [],
+        "tile": {
+            "kind": "pass"
+        },
+        "tiles": ["floor", "wall"],
+        "border": 1
     }
 }

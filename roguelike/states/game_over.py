@@ -1,6 +1,8 @@
 import logging
 from typing import (
+    Callable,
     ClassVar,
+    Optional,
     TYPE_CHECKING
 )
 
@@ -10,12 +12,13 @@ from roguelike.engine import (
     tween
 )
 from roguelike.states import ui
+from roguelike.world import world_select
 
 if TYPE_CHECKING:
     from roguelike.engine.sprite import Sprite
     from roguelike.engine.text import CharBank
 
-reset_func = None
+reset_func: Optional[Callable[[], None]] = None
 
 class GameOverState(ui.PoppableMenu):
     header_scale: ClassVar[float]
@@ -84,8 +87,10 @@ class GameOverState(ui.PoppableMenu):
         logging.debug('Restarting game')
         if reset_func != None:
             reset_func()
-        self.manager.state_stack[-2].respawn()
+        # self.manager.state_stack[-2].respawn()
         self.manager.pop_state()
+        self.manager.pop_state()
+        self.manager.push_state(world_select.WorldSelect())
     
     def quit_game(self):
         logging.debug('Quitting game')

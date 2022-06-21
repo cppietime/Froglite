@@ -10,28 +10,28 @@ Gfx effects (vignette, exposure)
 Configurable parameters (lazy resources?)
 Menu gfx design
 Game over state
+Drop items
+Overworld items
+Global flags
+Speaking NPCs
 
 In progress:
-Changing resolution
-Speaking NPCs
+World generation
+Spells
+Sound
 
 Ongoing long term:
 Asset creation
 
 To-do soon:
-Overworld items
-Drop items
-Spells
 
 To-do long term:
 Enrich combat
 Shops
-World generation
 Scaling borders
-Global flags
-Sound
 Save/load
 
 Stretch goal:
+Changing resolution
 Remap input
 Toss/sell/buy N amount screen state

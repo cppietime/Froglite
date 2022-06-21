@@ -179,7 +179,8 @@ def parse_action(source: Dict[str, Any]) -> ChatAction:
     elif kind == 'warp':
         name = source['world_gen']
         size = cast(Pos, tuple(source['size']))
-        return WarpAction(name, size)
+        reset = source.get('reset', False)
+        return WarpAction(name, size, reset)
     else:
         raise ValueError(f'{kind} is not a valid action')
 
@@ -244,11 +245,11 @@ class DieAction:
 class WarpAction:
     world_type_name: str
     world_size: Pos
+    reset: bool
     def perform_action(self,
                        state: 'ChatPromptState') -> bool:
         dms = cast('DungeonMapState', state.manager.state_stack[-2])
-        world_type = world_gen.world_generators[self.world_type_name]
-        lvl_entity.warp(dms, world_type, self.world_size)
+        lvl_entity.warp(dms, self.world_type_name, self.world_size, self.reset)
         return True
 
 @dataclass
@@ -294,7 +295,7 @@ class ChatPromptState(ui.MenuState):
         self.outer_holder = self.widget.widget
         self.outer_holder.buffer_display = 0
         self.outer_holder.scroll = False
-        self.outer_holder.spacing = 0#self.icon_y - self.start_y
+        self.outer_holder.spacing = 0
         self.holder = ui.WidgetHolder(buffer_display=0,
                                       scroll=False,
                                       spacing=0)
@@ -424,19 +425,19 @@ class ChatPromptState(ui.MenuState):
              tween.Tween(self.outer_holder.base_offset,
                          'y',
                          1080,
-                         0,#self.start_y,
+                         0,
                          .25))
         ])
         anim.attach(self)
         self.begin_animation(anim)
     
     def fall_down(self) -> None:
-        self.outer_holder.base_offset.y = 0#self.start_y
+        self.outer_holder.base_offset.y = 0
         anim = tween.Animation([
             (0,
              tween.Tween(self.outer_holder.base_offset,
                          'y',
-                         0,#self.start_y,
+                         0,
                          1080,
                          .25))
         ])
@@ -483,6 +484,7 @@ class NPCEntity(entity.Entity):
         def _event(state, event):
             while state.locked():
                 yield True
+            assets.Sounds.instance.ding.play()
             state.manager.push_state(new_state)
             yield False
         current_state.queue_event(event_manager.Event(_event))
@@ -503,9 +505,6 @@ def init_chats() -> None:
         if icon_name is not None:
             icon = assets.Sprites.instance.sprites[icon_name]
         action_list = cast(List[Dict[str, Any]], value.get('actions', []))
-        # actions: List[ChatAction] = []
-        # for action_dict in action_list:
-            # actions.append(parse_action(action))
         actions: List[ChatAction] = list(map(parse_action, action_list))
         chat = ChatPrompt(message=msg,
                           menu_choices=choices,

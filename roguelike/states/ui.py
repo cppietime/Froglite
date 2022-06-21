@@ -156,6 +156,8 @@ class Button:
         field(default_factory = tween.AnimatableMixin)
     enabled: bool = True
     
+    sound: ClassVar[Optional[pg.mixer.Sound]] = None
+    
     def selectable(self) -> bool:
         return self.enabled
     
@@ -168,6 +170,8 @@ class Button:
     
     def keydown(self, delta_time: float, state: gamestate.GameState, key: int):
         if key == pg.K_RETURN and self.command is not None:
+            if self.sound is not None:
+                self.sound.play()
             self.command(state)
     
     def update(self, delta_time, state):
@@ -217,6 +221,8 @@ class WidgetHolder:
     zero_point: float = 0
     scroll_time: float = 0.2
     scroll: bool = True
+    
+    sound: ClassVar[Optional[pg.mixer.Sound]] = None
     
     def selectable(self):
         return any(map(lambda w: w.selectable(), self.widgets))
@@ -313,6 +319,8 @@ class WidgetHolder:
                 anim = tween.Animation(tweens)
                 state.begin_animation(anim)
                 anim.attach(state)
+                if self.sound is not None:
+                    self.sound.play()
             return True
         return False
     
@@ -459,6 +467,7 @@ class MenuState(gamestate.GameState):
         self.widget.validate()
         
 class PoppableMenu(MenuState):
+    pop_sound: ClassVar[Optional[pg.mixer.Sound]] = None
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.auto_pop = False
@@ -478,6 +487,8 @@ class PoppableMenu(MenuState):
         if self.locked():
             return True
         if self.inputstate.keys[pg.K_BACKSPACE][inputs.KeyState.DOWN]:
+            if self.pop_sound is not None:
+                self.pop_sound.play()
             self._trigger_pop()
             return True
         super().update_gamestate(delta_time)

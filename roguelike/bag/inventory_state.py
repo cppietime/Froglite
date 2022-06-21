@@ -22,6 +22,7 @@ from roguelike.engine import (
 )
 from roguelike.bag import item
 from roguelike.states import ui
+from roguelike.world import world_select
 
 if TYPE_CHECKING:
     from roguelike.engine.gamestate import GameState
@@ -53,9 +54,38 @@ class InventoryBaseScreen(ui.PoppableMenu):
         self.mainholder = metawidget.widget
         self.mainholder.horizontal = False
         self.mainholder.base_offset.y = 1080
+        self.mainholder.scroll = False
+        self.mainholder.buffer_display = 0
         self.desc_label = ui.Label(None, None)
         self.cycle_screen = ui.WidgetHolder(horizontal=True)
         self.mainholder.widgets.append(self.cycle_screen)
+        self.mainholder.spacing = self.button_h + self.button_margin_x * 2
+        self.mainholder.widgets.append(ui.build_button_widget(
+            "Back",
+            [(1440 - self.button_w) / 2 + self.button_margin_x,
+             self.button_y,
+             self.button_w - self.button_margin_x * 2,
+             self.button_h],
+            self.header_scale,
+            (self.button_text_padding_x, self.button_text_padding_y),
+            lambda _: self._trigger_pop(),
+            alignment=text.CENTER_CENTER,
+            active_bg_sprite=self.active_button_bg,
+            inactive_bg_sprite=self.inactive_button_bg
+        ))
+        self.mainholder.widgets.append(ui.build_button_widget(
+            "Quit",
+            [(1440 - self.button_w) / 2 + self.button_margin_x,
+             self.button_y,
+             self.button_w - self.button_margin_x * 2,
+             self.button_h],
+            self.header_scale,
+            (self.button_text_padding_x, self.button_text_padding_y),
+            lambda _: self.restart(),
+            alignment=text.CENTER_CENTER,
+            active_bg_sprite=self.active_button_bg,
+            inactive_bg_sprite=self.inactive_button_bg
+        ))
         self.cycle_screen.spacing = self.button_w
         self.cycle_screen.zero_point = (len(item.ItemSlot) - 1) / 2
         for i, slot in enumerate(item.ItemSlot):
@@ -124,6 +154,16 @@ class InventoryBaseScreen(ui.PoppableMenu):
                         self.inventory[itemslot])
         screen._build_menu(slot_inv, self.inventory, self)
         self.manager.push_state(screen)
+    
+    def restart(self) -> None:
+        self._trigger_pop()
+        def _then(state, event):
+            while state.locked():
+                yield True
+            state.die()
+            state.manager.push_state(world_select.WorldSelect())
+            yield False
+        self.manager.state_stack[-2].queue_event(event_manager.Event(_then))
     
     @classmethod
     def init_globs(cls) -> None:

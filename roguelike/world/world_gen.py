@@ -30,9 +30,11 @@ from numpy import typing as npt
 
 from roguelike.world import (
     bsp,
+    cellular,
     dungeon,
-    wfc,
-    lvl_entity
+    lvl_entity,
+    noise,
+    wfc
 )
 from roguelike.engine import (
     assets,
@@ -72,6 +74,15 @@ def parse_wall_generator(source: Dict[str, Any]) -> WallGenerator:
         outside = cast(int, source.get('outside', 1))
         border_id = cast(int, source.get('border', 1))
         return WallGeneratorBSP(inside, outside, border_id, leaf_size, join)
+    elif kind == 'white':
+        tiles = source['tiles']
+        weights = source.get('weights', (1,) * len(tiles))
+        return WallGeneratorWhite(tiles, weights)
+    elif kind == 'perlin':
+        tiles = source['tiles']
+        scale = cast(Pos, tuple(source['scale']))
+        rectify = source.get('rectify', True)
+        return WallGeneratorPerlin(tiles, scale, rectify)
     else:
         raise ValueError(f'{kind} is not a valid wall generator type')
 
@@ -150,7 +161,28 @@ class WallGeneratorBSP:
                        self.border,
                        self.join)
 
-# TODO Perlin/Simplex noise
+@dataclass
+class WallGeneratorWhite:
+    tiles: Sequence[int]
+    weights: Sequence[float]
+    def generate_walls(self, size: Pos) -> WallGrid:
+        return noise.white(size, self.tiles, self.weights)
+
+@dataclass
+class WallGeneratorPerlin:
+    tiles: Sequence[int]
+    scale: Tuple[float, float]
+    rectify: bool
+    def generate_walls(self, size: Pos) -> WallGrid:
+        dx = size[0] / self.scale[0]
+        dy = size[1] / self.scale[1]
+        off_x = random.random() * 1000
+        off_y = random.random() * 1000
+        return noise.perlin(size,
+                            (dx, dy),
+                            self.tiles,
+                            (off_x, off_y),
+                            self.rectify)
 
 class WallFeature(Protocol):
     """Modifies generated walls"""
@@ -171,6 +203,17 @@ def parse_wall_feature(source: Dict[str, Any]) -> WallFeature:
         outside = source['outside']
         border = source.get('border', outside)
         return WallFeatureJoin(passables, inside, outside, border)
+    elif kind == 'cellular':
+        clear_below = source['clear_below']
+        fill_from = source['fill_from']
+        clear_with = source['clear_with']
+        fill_with = source['fill_with']
+        full = set(source['full'])
+        iterations = source['iterations']
+        corners = source.get('corners', True)
+        return WallFeatureCA(
+            clear_below, fill_from, clear_with,
+            fill_with, full, iterations, corners)
     else:
         raise ValueError(f'{kind} is not a valid feature type')
 
@@ -250,6 +293,23 @@ class WallFeatureJoin:
             j_pos = random.choice(list(groups[j]))
             bsp.tunnel(walls, i_pos, j_pos,
                        self.inside, self.outside, self.border)
+
+@dataclass
+class WallFeatureCA:
+    """Runs a cellular automaton
+    """
+    clear_below: int
+    fill_from: int
+    clear_with: int
+    fill_with: int
+    full: Set[int]
+    iterations: int
+    corners: bool
+    def apply_feature(self, walls: WallGrid) -> None:
+        cellular.run(
+            walls, self.clear_below, self.fill_from,
+            self.clear_with, self.fill_with, self.full,
+            self.iterations, self.corners)
 
 class TileGenerator(Protocol):
     """Handles populating a grid with actual tiles"""

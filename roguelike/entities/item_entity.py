@@ -2,6 +2,7 @@ from typing import (
     TYPE_CHECKING
 )
 
+from roguelike.engine import assets
 from roguelike.entities import entity
 from roguelike.bag import item
 
@@ -26,6 +27,7 @@ class ItemEntity(entity.Entity):
         self.pain_particle(current_state,
             f'Got {self.item.name} x{self.count}!', (1, 1, 1, 1))
         player.inventory.give_item(self.item, self.count)
+        assets.Sounds.instance.budu.play()
         self.entity_die(current_state, None)
 
 class KeyEntity(ItemEntity):
@@ -40,6 +42,7 @@ class KeyEntity(ItemEntity):
         has = player.inventory[self.item]
         self.pain_particle(current_state,
             f'{self.item.name} {has}/{self.needed}', (1, 1, 0, 1))
+        assets.Sounds.instance.budu.play()
         self.entity_die(current_state, None)
 
 entity.entities['ItemEntity'] = ItemEntity

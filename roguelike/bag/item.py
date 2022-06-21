@@ -71,6 +71,7 @@ class EquipmentSlot(IntEnum):
     WEAPON = 0
     SPELL = 1
     ARMOR = 2
+    CHARM = 3
 
 @dataclass(frozen=True, eq=True)
 class EquipableItem(BaseItem):
@@ -97,6 +98,14 @@ class ArmorItem(EquipableItem):
     
     itemslot = ItemSlot.EQUIPMENT
     equip_slot = EquipmentSlot.ARMOR
+
+@dataclass(frozen=True, eq=True)
+class CharmItem(EquipableItem):
+    """Charm, buffs magic"""
+    pow_mul: float
+    
+    itemslot = ItemSlot.EQUIPMENT
+    equip_slot = EquipmentSlot.CHARM
 
 @dataclass(frozen=True, eq=True)
 class SpellItem(EquipableItem):

@@ -74,11 +74,13 @@ class ProjectileSpell(item.SpellItem):
         motion.attach(dms)
         animation = assets.Animations.instance.animations[self.animation_name]
         dms.spawn_particle(rect, motion, animation=animation, direction=user.anim.direction)
+        assets.Sounds.instance.pew.play()
         if target is not None:
             dmg = user._spell_attack_logic(self.attack_pow, dms, target)
             def _event(_state, event):
                 while _state.locked():
                     yield True
+                assets.Sounds.instance.fwsh.play()
                 target.get_hit(_state, user, dmg)
                 while _state.locked():
                     yield True

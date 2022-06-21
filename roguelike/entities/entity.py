@@ -16,6 +16,8 @@ from typing import (
     TYPE_CHECKING
 )
 
+import pygame as pg
+
 from roguelike.engine import (
     assets,
     awaiting,
@@ -76,6 +78,7 @@ class Entity:
     base_size: ClassVar[int] = 1
     name: ClassVar[str] = 'Entity'
     particle_backdrop: ClassVar[Optional[sprite.Animation]] = None
+    death_sound: ClassVar[Optional[pg.mixer.Sound]] = None
     
     def __post_init__(self):
         if isinstance(self.class_anim, sprite.Animation):
@@ -228,6 +231,8 @@ class Entity:
                    state: gamestate.GameState,
                    killer: Optional['FightingEntity']=None) -> None:
         """Calls when something needs to die or be removed"""
+        if self.death_sound is not None:
+            self.death_sound.play()
         state = cast('DungeonMapState', state)
         state.dungeon_map.remove_entity(self)
 
@@ -240,12 +245,16 @@ class FightingEntity(Entity):
     ClassVars:
     attack_length: Duration of the attack melee animation
     """
+    melee_sound: ClassVar[Optional[pg.mixer.Sound]] = None
     def __init__(self, *args, **kwargs):
         self.max_hp: int = kwargs.pop('max_hp')
         self.hp = self.max_hp
         self.attack_stat: float = kwargs.pop('attack', 1.)
         self.defense_stat: float = kwargs.pop('defense', 1.)
         super().__init__(*args, **kwargs)
+        
+        # DEBUG
+        self.death_sound = assets.Sounds.instance.ah
     
     def get_hit(self,
                 state: gamestate.GameState,
@@ -272,7 +281,7 @@ class FightingEntity(Entity):
                             magic: float,
                             state: gamestate.GameState,
                             target: 'FightingEntity') -> int:
-        atk = magic
+        atk = magic * self.effective_magic()
         dfn = target.effective_defense()
         return max(1, int(round(atk / dfn)))
     
@@ -299,6 +308,8 @@ class FightingEntity(Entity):
                                      sprite.AnimState.IDLE,
                                      0,
                                      interpolation=tween.bounce(1))
+            if self.melee_sound is not None:
+                self.melee_sound.play()
             while state.locked():
                 yield True
             target.get_hit(_state, self, damage)
@@ -310,6 +321,9 @@ class FightingEntity(Entity):
     
     def effective_defense(self) -> float:
         return self.defense_stat
+    
+    def effective_magic(self) -> float:
+        return 1
     
 class ActingEntity(FightingEntity):
     """Entities that take actions between turns
