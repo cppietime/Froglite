@@ -254,7 +254,9 @@ class WallFeatureDLA:
                         current = walls[y, x]
                         stuck = current != self.sticky
                     if stuck:
-                        walls[y, x] = self.sticky
+                        if x >= 0 and y >= 0 and x < walls.shape[1]\
+                                and y < walls.shape[0]:
+                            walls[y, x] = self.sticky
                         break
                 else:
                     if x < 0 or y < 0 or x >= walls.shape[1]\
@@ -387,6 +389,7 @@ class WorldGenerator:
     max_boredom: float = 16
     vignette_color: Tuple[float, float, float, float] = (.2, .2, .2, 1)
     border: int = -1
+    music: Optional[str] = None
     
     def generate_world(self,
                        size: Pos,
@@ -483,6 +486,8 @@ class WorldGenerator:
             fun_path = utils.trace_djikstra(boring_pos, dists)
             dists = utils.populate_djikstra(costs, fun_path, dists)
         logging.debug(f'List of spawns = {spawner.spawns}')
+        if self.music is not None:
+            assets.Sounds.instance.play_music(self.music)
         return spawner
     
 world_generators: Dict[str, WorldGenerator] = {}
@@ -501,6 +506,7 @@ def init_generators() -> None:
         vignette = cast(Tuple[float, float, float, float],
                         tuple(value.get('vignette', (.2, .2, .2, 1))))
         border = value.get('border', -1)
+        music = value.get('music', None)
         world_generators[name] = WorldGenerator(
             wall_generator=wall_generator,
             wall_features=features,
@@ -510,4 +516,5 @@ def init_generators() -> None:
             exits=exits,
             max_boredom=boredom,
             vignette_color=vignette,
-            border=border)
+            border=border,
+            music=music)

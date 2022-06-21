@@ -125,7 +125,7 @@ while assets.running:
     for event in pg.event.get():
         if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
             assets.running=False
-        elif event.type == pg.KEYDOWN and event.key in (pg.K_u, pg.K_i, pg.K_o, pg.K_p, pg.K_y):
+        elif event.type == pg.KEYDOWN and event.key in (pg.K_u, pg.K_i, pg.K_o, pg.K_p, pg.K_y, pg.K_z, pg.K_x):
             if event.key == pg.K_u:
                 gamma -= .1
             elif event.key == pg.K_i:
@@ -134,6 +134,10 @@ while assets.running:
                 exposure -= .1
             elif event.key == pg.K_p:
                 exposure += .1
+            elif event.key == pg.K_z:
+                assets.Sounds.instance.adjust_vol(False)
+            elif event.key == pg.K_x:
+                assets.Sounds.instance.adjust_vol(True)
             else:
                 render_mode = not render_mode
             print(f'{gamma=}, {exposure=}')

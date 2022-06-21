@@ -27,7 +27,8 @@
         "border": 1,
         "tiles": [
         "floor", "wall", "badfloor"
-        ]
+        ],
+        "music": "med.mid"
     },
     "bspworld": {
         "wall": {
@@ -67,27 +68,15 @@
         {
             "class": "Pursuant",
             "animation": "slow_chaser",
+            "max_hp": 20,
             "action_cost": 2,
             "limit": 4,
-            "attack": 2,
+            "attack": 10,
             "defense": 1,
             "gold": 4,
             "atk_mul": 0.25,
             "def_mul": 0.25,
-            "drops": [
-            {
-                "class": "Pursuant",
-                "animation": "slow_chaser",
-                "action_cost": 4,
-                "limit": 4,
-                "attack": 2,
-                "defense": 1,
-                "weight": 1
-            },
-            {
-                "weight": 4
-            }
-            ],
+            "drops": [],
             "weight": 3
         },
         {
@@ -109,7 +98,8 @@
         {
             "key": "Key"
         }
-        ]
+        ],
+        "music": "midi.mid"
     },
     "whitenoise": {
         "wall": {

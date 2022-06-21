@@ -24,6 +24,7 @@ Ongoing long term:
 Asset creation
 
 To-do soon:
+Mana
 
 To-do long term:
 Enrich combat

@@ -3,6 +3,7 @@ import json
 import math
 import os
 import sys
+import threading
 from typing import (
     cast,
     Any,
@@ -186,9 +187,27 @@ class Sounds:
     instance: 'Sounds'
     def __init__(self):
         self.sounds: Dict[str, pg.mixer.Sound] = {}
+        self.volume = 1.
     
     def __getattr__(self, name: str) -> pg.mixer.Sound:
         return self.sounds[name]
+    
+    def adjust_vol(self, up: bool) -> None:
+        if up:
+            self.volume = min(self.volume + .1, 1.)
+        else:
+            self.volume = max(self.volume - .1, 0.)
+        for sound in self.sounds.values():
+            sound.set_volume(self.volume)
+    
+    def play_music(self, pat: str) -> None:
+        pat = asset_path(os.path.join('music', pat))
+        def _thread():
+            if pg.mixer.music.get_busy():
+                pg.mixer.music.fadeout(500)
+            pg.mixer.music.load(pat)
+            pg.mixer.music.play(loops=-1)
+        threading.Thread(target=_thread).start()
     
     @staticmethod
     def load_sounds(source: Dict[str, Any]) -> None:

@@ -37,8 +37,8 @@ class PlayerEntity(entity.FightingEntity):
         self.sqr_sprite = assets.Sprites.instance.highlight
         super().__init__(*args,
                          passable=False,
-                         max_hp=10,
-                         attack=5,
+                         max_hp=100,
+                         attack=10,
                          defense=1,
                          **kwargs)
         self.anim.speed = 0
