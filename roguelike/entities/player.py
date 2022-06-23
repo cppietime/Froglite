@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import (
     cast,
     ClassVar,
@@ -91,6 +92,9 @@ class PlayerEntity(entity.FightingEntity):
             _n_dungeon_pos[0] += 1
             self.anim.direction = sprite.AnimDir.RIGHT
             prop = 'x'
+        if prop is not None and shift_pressed\
+                and assets.persists.get('tutorial', 0) == 1:
+            assets.persists['tutorial'] = 2
         if prop is not None\
                 and state.dungeon_map.is_free(tuple(_n_dungeon_pos))\
                 and not shift_pressed:
@@ -107,10 +111,12 @@ class PlayerEntity(entity.FightingEntity):
                                      0,
                                      None,
                                      True)
-            def _event(state, event):
-                while state.locked():
+            def _event(_state, event):
+                while _state.locked():
                     yield True
-                state.let_entities_move()
+                if assets.persists.get('tutorial', 0) == 0:
+                    assets.persists['tutorial'] = 1
+                _state.let_entities_move()
                 yield False
             state.start_event(event_manager.Event(_event))
             return
@@ -126,16 +132,37 @@ class PlayerEntity(entity.FightingEntity):
             if self.anim.direction == sprite.AnimDir.RIGHT:
                 t_x += 1
             target_ent = state.dungeon_map.entities.get((t_x, t_y), None)
-            if target_ent is not None:
+            if target_ent is not None\
+                    and assets.persists.get('tutorial', 0) != 4:
+                did_something = False
                 if target_ent.attackable:
                     target_ent = cast(entity.EnemyEntity, target_ent)
                     self.melee_attack(state, target_ent)
-                    return
+                    did_something = True
                 elif target_ent.interactable:
                     target_ent.interact(state, self)
+                    did_something = True
+                if did_something:
+                    if assets.persists.get('tutorial', 0) == 3:
+                        assets.persists['tutorial'] = 4
+                        def _event(_state, event):
+                            while _state.locked():
+                                yield True
+                            accum = 0.
+                            last_time = time.time_ns()
+                            while accum < 3.:
+                                new_time = time.time_ns()
+                                accum += (new_time - last_time) * 1e-9
+                                last_time = new_time
+                                yield True
+                            assets.persists['tutorial'] = 5
+                            yield False
+                        state.queue_event(event_manager.Event(_event))
                     return
         # Open inventory
         if state.inputstate.keys[pg.K_BACKSPACE][inputs.KeyState.DOWN]:
+            if assets.persists.get('tutorial', 0) == 2:
+                assets.persists['tutorial'] = 3
             def _menu(state, event):
                 while state.locked():
                     yield True

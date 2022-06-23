@@ -21,7 +21,7 @@ from typing import (
 import moderngl as mgl # type: ignore
 import pygame as pg
 
-import lpyc_tts_shotgunllama as tts
+import lpyc_tts_shotgunllama as tts # type: ignore
 from roguelike.engine import (
     sprite
 )

@@ -48,7 +48,8 @@ from roguelike.bag import (
 from roguelike.entities import (
     entity,
     item_entity,
-    spawn
+    spawn,
+    slow_chaser
 )
 
 Pos = Tuple[int, int]
@@ -360,7 +361,7 @@ class TileGeneratorWhiteNoise:
                 tiles[y, x] = np.random.choice(clazz[0], p=clazz[1])
         return tiles
 
-Predicates = Sequence[Tuple[str, str, Any]]
+Predicates = Sequence[Tuple[str, str, Any, bool]]
     
 @dataclass
 class ExitPlacer:
@@ -470,12 +471,28 @@ class WorldGenerator:
         spawner.spawns.append((furthest_away, lvl_entity.LadderEntity,
                                {'size': (w, h), 'key_item': key_item,
                                 'key_count': key_count}))
-        # TODO generate main goal(i.e. exit to next level)
         hot_path = utils.trace_djikstra(furthest_away, dists)
         dists = utils.populate_djikstra(costs, hot_path, dists)
         
         blocking = utils.clear_blockage(dists)
         self.populator.reset_counts()
+        
+        # Place tutorial dummy
+        if assets.persists.get('tutorial', 0) < 6:
+            boring_pos = cast(Tuple[int, int], divmod(
+                np.where(np.isinf(dists)\
+                            | ~passable\
+                            | blocking,
+                         -np.inf, dists).argmax(),
+                size[0])[::-1])
+            spawner.spawns.append((boring_pos, slow_chaser.PursuantEnemy, {
+                'anim': assets.Animations.instance.slow_chaser,
+                'action_cost': 1e10,
+                'attack': 0,
+                'defense': 1e10,
+                'max_hp': 100
+            }))
+        
         while True:
             boring_pos = cast(Tuple[int, int], divmod(
                 np.where(np.isinf(dists)\

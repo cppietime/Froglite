@@ -48,6 +48,12 @@ class LadderEntity(entity.Entity):
             self.done_message = True
         player_ent = dms.dungeon_map.player
         if player_pos == self.dungeon_pos:
+            if assets.persists.get('tutorial', 0) < 5 and not self.active:
+                self.pain_particle(
+                    state,
+                    'Finish tutorial first')
+                self.active = True
+                return
             works = self.key_item is None
             if not works:
                 works = player_ent.inventory.take_item(self.key_item,
@@ -67,6 +73,7 @@ class LadderEntity(entity.Entity):
     def to_next_room(self, state: dungeon.DungeonMapState) -> None:
         logging.debug('Will move player to next room')
         assets.Sounds.instance.budu.play()
+        assets.persists['tutorial'] = 6
         warp(state,
              self.target_type or assets.variables['world_gen'],
              self.size)

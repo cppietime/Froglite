@@ -103,7 +103,7 @@ def parse_spawn(source: Dict[str, Any]) -> Spawn:
     return Spawn(clazz, params, limit, weight, diff, preds)
 
 def parse_spawns(source: List[str]) -> Populator:
-    spawns: List[Spawn] = []
+    spawns: List[str] = []
     for spawn_d in source:
         spawns.append(spawn_d)
     return Populator(spawns)

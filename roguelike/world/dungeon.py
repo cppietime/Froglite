@@ -422,6 +422,27 @@ class DungeonMapState(gamestate.GameState):
                                (self.tile_size * 11, self.tile_size // 4),
                                (.2, .7, .4, 1),
                                (self.base_text_scale,) * 2)
+            
+            # Tutorial
+            t_state = assets.persists.get('tutorial', 0)
+            t_str = None
+            if t_state == 0:
+                t_str = 'Move with WASD/Arrows'
+            elif t_state == 1:
+                t_str = 'Hold SHIFT to turn'
+            elif t_state == 2:
+                t_str = 'BACKSPACE to open menu'
+            elif t_state == 3:
+                t_str = 'ENTER to attack/interact.\nHit the dummy'
+            elif t_state == 4:
+                t_str = 'CTRL to cast equipped spell'
+            elif t_state == 5:
+                t_str = 'Move to the portal'
+            if t_str is not None:
+                self.font.draw_str(t_str,
+                                   (0, 1080 - self.tile_size * 2),
+                                   (1, 1, 1, 1),
+                                   (self.base_text_scale,) * 2)
         
         # Blackout effect
         if self.blackout > 0:
