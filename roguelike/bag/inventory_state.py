@@ -267,7 +267,7 @@ class ItemSlotSubscreen(ui.PoppableMenu):
                     inactive_color = [1., .5, .5, 1.]
                     active_color = [.5, .2, 1., 1.]
             button = ui.build_button_widget(
-                itm.name,
+                itm.display,
                 [self.item_name_margin, 0,
                     self.item_name_size, self.item_row_height],
                 InventoryBaseScreen.text_scale,

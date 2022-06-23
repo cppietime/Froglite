@@ -1,31 +1,27 @@
 {
-    "hard_chaser": {
+    "med_chaser": {
         "class": "Pursuant",
         "animation": "slow_chaser",
-        "max_hp": 30,
+        "max_hp": 25,
         "action_cost": 1.5,
-        "limit": 8,
-        "attack": 16,
-        "defense": 2,
-        "gold": 6,
+        "attack": 12,
+        "defense": 1.5,
+        "gold": 5,
         "atk_mul": 0.25,
-        "def_mul": 0.25,
-        "drops": [],
-        "weight": 1
+        "def_mul": 0.1,
+        "drops": []
     },
     "slow_chaser": {
         "class": "Pursuant",
         "animation": "slow_chaser",
         "max_hp": 20,
         "action_cost": 2,
-        "limit": 7,
         "attack": 10,
         "defense": 1,
-        "gold": 40,
+        "gold": 3,
         "atk_mul": 0.25,
-        "def_mul": 0.25,
-        "drops": [],
-        "weight": 1
+        "def_mul": 0.1,
+        "drops": []
     },
     "null": {
         "weight": 1
@@ -33,11 +29,6 @@
     "buy_fireball": {
         "class": "NPCEntity",
         "animation": "fireball",
-        "chat": "buy_fireball",
-        "limit": 1,
-        "predicates": [
-        ["Fireball", "!=", true, true]
-        ],
-        "weight": 3
+        "chat": "buy_fireball"
     }
 }

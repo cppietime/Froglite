@@ -16,5 +16,6 @@ def init_items() -> None:
         icon_key = cast(str, value['icon'])
         icon = assets.Sprites.instance.sprites[icon_key]
         attack = cast(float, value.get('attack', 1))
-        items[name] = item.WeaponItem(name, icon, description, attack)
+        display = value.get('display', name.title())
+        items[name] = item.WeaponItem(name, icon, description, display, attack)
     item.items.update(items)

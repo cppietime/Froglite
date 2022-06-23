@@ -172,26 +172,6 @@ class CharBank:
                     x = pos[0]
                     y += self.line_height * scale[1]
                 i += 1
-            
-        # for ch in msg:
-            # if ch == '\n':
-                # x = pos[0]
-                # y += self.line_height * scale[1]
-                # continue
-            # if ord(ch) not in self.glyphs:
-                # continue
-            # glyph = self.glyphs[ord(ch)]
-            # size = glyph.size_texels
-            # width = size[0] * scale[0]
-            # if max_width > 0 and x + width - pos[0] >= max_width:
-                # x = pos[0]
-                # y += self.line_height * scale[1]
-            # height = size[1] * scale[1]
-            # self.renderer.render_sprite(glyph,
-                                        # (x, y),
-                                        # (width, height),
-                                        # color=color)
-            # x += width
     
     def draw_str_in(self,
                  msg: str,

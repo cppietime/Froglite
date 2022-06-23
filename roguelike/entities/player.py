@@ -27,6 +27,7 @@ from roguelike.states import game_over
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
+    from roguelike.world.dungeon import DungeonMapState
 
 class PlayerEntity(entity.FightingEntity):
     """The player"""
@@ -43,6 +44,8 @@ class PlayerEntity(entity.FightingEntity):
                          attack=10,
                          defense=1,
                          **kwargs)
+        self.max_mp = 20
+        self.mp = self.max_mp
         self.anim.speed = 0
         self.anim.direction = sprite.AnimDir.DOWN
         self.shaky_cam: List[int] = [0, 0]
@@ -116,7 +119,7 @@ class PlayerEntity(entity.FightingEntity):
                     yield True
                 if assets.persists.get('tutorial', 0) == 0:
                     assets.persists['tutorial'] = 1
-                _state.let_entities_move()
+                self.taken_action(_state)
                 yield False
             state.start_event(event_manager.Event(_event))
             return
@@ -174,8 +177,9 @@ class PlayerEntity(entity.FightingEntity):
                 or state.inputstate.keys[pg.K_RCTRL][inputs.KeyState.DOWN]:
             # Use magic
             spell_item = self.inventory[item.EquipmentSlot.SPELL]
-            if spell_item is not None:
+            if spell_item is not None and self.mp >= spell_item.mana_cost:
                 spell_item.on_use(state, self)
+                self.mp -= spell_item.mana_cost
     
     def render_entity(self, delta_time, renderer, base_offset):
         super().render_entity(delta_time, renderer, base_offset)
@@ -303,7 +307,7 @@ class PlayerEntity(entity.FightingEntity):
             target.get_hit(state, self, damage)
             while _state.locked():
                 yield True
-            _state.let_entities_move()
+            self.taken_action(_state)
             yield False
         state.queue_event(event_manager.Event(_event))
         
@@ -329,4 +333,17 @@ class PlayerEntity(entity.FightingEntity):
             pow_mul = charm.pow_mul
         return max(1, int(round(super().effective_magic() * pow_mul)))
     
+    def regain_mp(self):
+        charm = self.inventory[item.EquipmentSlot.CHARM]
+        mpr = 1.
+        if charm is not None:
+            mpr *= charm.mpr_mul
+        self.mp = min(self.max_mp, self.mp + mpr)
+    
+    def taken_action(self, state: 'DungeonMapState') -> None:
+        """Everything to be calculated/performed after the player
+        takes their action, such as letting enemies act
+        """
+        state.let_entities_move()
+        self.regain_mp()
     

@@ -70,10 +70,11 @@ class WorldSelect(ui.PoppableMenu):
         for key, value in assets.persists['unlocked'].items():
             if not value:
                 continue
+            wgen = world_gen.world_generators[key]
             button = ui.build_button_widget(
-                key, [0, 0,
-                      self.button_w,
-                      self.button_h], None,
+                wgen.display_name, [0, 0,
+                                    self.button_w,
+                                    self.button_h], None,
                 (self.button_text_margin_x, self.button_text_margin_y),
                 command=lambda _, name=key: self.button_chose(name),
                 active_bg_sprite=self.active_button_bg,

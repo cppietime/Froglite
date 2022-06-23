@@ -35,6 +35,7 @@
         "boredom": 5
     },
     "bspworld": {
+        "display": "Ole' Caves",
         "wall": {
             "kind": "bsp",
             "leaf_size": [6, 6],
@@ -44,15 +45,6 @@
             "outside": 1
         },
         "features": [
-        {
-            "kind": "cellular",
-            "clear_below": 3,
-            "fill_from": 4,
-            "clear_with": 0,
-            "fill_with": 1,
-            "full": [1],
-            "iterations": 1
-        },
         {
             "kind": "join",
             "passable": [0],
@@ -69,8 +61,28 @@
         "floor", "wall", "badfloor"
         ],
         "spawns": [
-            "slow_chaser",
-            "buy_fireball"
+        {
+            "name": "slow_chaser",
+            "limit": 7,
+            "weight": 1
+        },
+        {
+            "name": "med_chaser",
+            "limit": 6,
+            "weight": 1,
+            "predicates": [
+            ["difficulty", ">", 7, false]
+            ]
+        },
+        {
+            "name": "buy_fireball",
+            "limit": 1,
+            "predicates": [
+            ["Fireball", "!=", true, true],
+            ["difficulty", ">", 7, false]
+            ],
+            "weight": 4
+        }
         ],
         "boredom": 4,
         "exits": [
@@ -78,7 +90,9 @@
             "key": "Key",
             "count": [1, 3]
         },
-        {}
+        {
+            "weight": 1.5
+        }
         ],
         "music": "midi.mid"
     },

@@ -39,6 +39,7 @@ class BaseItem:
     name: str
     icon: 'Sprite'
     description: str
+    display: str
     
     itemslot: ClassVar[ItemSlot]
     usable: ClassVar[bool] = False
@@ -101,8 +102,9 @@ class ArmorItem(EquipableItem):
 
 @dataclass(frozen=True, eq=True)
 class CharmItem(EquipableItem):
-    """Charm, buffs magic"""
+    """Charm, buffs magic and/or MP regen"""
     pow_mul: float
+    mpr_mul: float
     
     itemslot = ItemSlot.EQUIPMENT
     equip_slot = EquipmentSlot.CHARM
@@ -112,6 +114,7 @@ class SpellItem(EquipableItem):
     """Not really an item but it can be accessed through the
     player's inventory all the same
     """
+    mana_cost: int
     def on_use(self, state: 'GameState', user: 'FightingEntity') -> None:
         pass
     

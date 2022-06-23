@@ -15,6 +15,7 @@ from roguelike.engine import (
     tween
 )
 from roguelike.bag import item
+from roguelike.entities import player
 
 if TYPE_CHECKING:
     from roguelike.entities.entity import FightingEntity
@@ -84,7 +85,8 @@ class ProjectileSpell(item.SpellItem):
                 target.get_hit(_state, user, dmg)
                 while _state.locked():
                     yield True
-                _state.let_entities_move()
+                if isinstance(user, player.PlayerEntity):
+                    user.taken_action(_state)
                 yield False
             dms.queue_event(event_manager.Event(_event))
 
@@ -98,6 +100,8 @@ def init_items():
         attack = value['attack']
         icon = assets.Sprites.instance.sprites[value['icon']]
         description = value['description']
-        spell = ProjectileSpell(name, icon, description, reach=reach, animation_name=anim_name, attack_pow=attack)
+        display = value.get('display', name.title())
+        cost = value.get('cost', 2)
+        spell = ProjectileSpell(name, icon, description, display, cost, reach=reach, animation_name=anim_name, attack_pow=attack)
         items[name] = spell
     item.items.update(items)

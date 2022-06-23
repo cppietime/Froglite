@@ -42,11 +42,13 @@ class HealthRestorationItem(item.ConsumableItem):
     def __init__(self,
                  name: str,
                  description: str,
+                 display: str,
                  icon: sprite.Sprite,
                  message: str,
                  amount: float):
         super().__init__(name=name,
                          description=description,
+                         display=display,
                          icon=icon,
                          on_use=self.on_use)
         self.message = message
@@ -69,11 +71,13 @@ class HealthRestorationItem(item.ConsumableItem):
     @staticmethod
     def create(name: str,
                description: str,
+               display_name: str,
                icon: sprite.Sprite,
                params: Dict[str, Any]) -> 'HealthRestorationItem':
         amount = int(params['amount'])
         message = cast(str, params['message'])
-        return HealthRestorationItem(name, description, icon, message, amount)
+        return HealthRestorationItem(
+            name, description, display_name, icon, message, amount)
 
 # Dict mapping "kind" values to functions to call to create the items
 # by their JSON objects
@@ -92,6 +96,7 @@ def init_items() -> None:
         icon_key = cast(str, value['icon'])
         icon = assets.Sprites.instance.sprites[icon_key]
         kind = cast(str, value['kind'])
+        display = value.get('display', name.title())
         constructor = _consumable_kinds[kind]
-        items[name] = constructor(name, description, icon, value)
+        items[name] = constructor(name, description, display, icon, value)
     item.items.update(items)

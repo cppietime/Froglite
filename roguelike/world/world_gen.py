@@ -391,6 +391,7 @@ class WorldGenerator:
     tile_list: MutableSequence[dungeon.DungeonTile]
     populator: spawn.Populator
     exits: Sequence[ExitPlacer]
+    display_name: str
     max_boredom: float = 16
     vignette_color: Tuple[float, float, float, float] = (.2, .2, .2, 1)
     border: int = -1
@@ -530,12 +531,14 @@ def init_generators() -> None:
                         tuple(value.get('vignette', (.2, .2, .2, 1))))
         border = value.get('border', -1)
         music = value.get('music', None)
+        display_name = value.get('display', name.title())
         world_generators[name] = WorldGenerator(
             wall_generator=wall_generator,
             wall_features=features,
             tile_generator=tile_generator,
             tile_list=tile_list,
             populator=spawns,
+            display_name=display_name,
             exits=exits,
             max_boredom=boredom,
             vignette_color=vignette,

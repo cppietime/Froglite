@@ -1,5 +1,6 @@
 {
     "Fireball": {
+        "display": "Peepeepoopoo",
         "animation": "fireball",
         "reach": 4,
         "attack": 10,

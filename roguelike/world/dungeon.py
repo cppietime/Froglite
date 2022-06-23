@@ -408,20 +408,29 @@ class DungeonMapState(gamestate.GameState):
             
             # Render UI
             hp_str = f'HP:{player.hp:4}/{player.max_hp:4}'
-            self.font.draw_str(hp_str,
-                                          (self.tile_size // 4,) * 2,
-                                          (0, 1, 0, 1),
-                                          (self.base_text_scale,) * 2)
+            self.font.draw_str_in(hp_str,
+                                  (self.tile_size // 4,) * 2,
+                                  (self.tile_size * 5, self.tile_size),
+                                  (0, 1, 0, 1),
+                                  (self.base_text_scale,) * 2)
             coin_str = f"Coins:{assets.variables['coins']}"
-            self.font.draw_str(coin_str,
-                               (self.tile_size * 6, self.tile_size // 4),
-                               (.8, .8, 0, 1),
-                               (self.base_text_scale,) * 2)
+            self.font.draw_str_in(coin_str,
+                                  (self.tile_size * 6, self.tile_size // 4),
+                                  (self.tile_size * 5, self.tile_size),
+                                  (.8, .8, 0, 1),
+                                  (self.base_text_scale,) * 2)
             room_str = f"Room {assets.variables['difficulty']}"
-            self.font.draw_str(room_str,
-                               (self.tile_size * 11, self.tile_size // 4),
-                               (.2, .7, .4, 1),
-                               (self.base_text_scale,) * 2)
+            self.font.draw_str_in(room_str,
+                                  (self.tile_size * 11, self.tile_size // 4),
+                                  (1440 - self.tile_size * 11, self.tile_size),
+                                  (.2, .7, .4, 1),
+                                  (self.base_text_scale,) * 2)
+            mp_str = f'MP:{int(player.mp)}/{player.max_mp}'
+            self.font.draw_str_in(mp_str,
+                                  (self.tile_size // 4, self.tile_size),
+                                  (self.tile_size * 5, self.tile_size),
+                                  (0, .5, 1, 1),
+                                  (self.base_text_scale,) * 2)
             
             # Tutorial
             t_state = assets.persists.get('tutorial', 0)
@@ -439,10 +448,12 @@ class DungeonMapState(gamestate.GameState):
             elif t_state == 5:
                 t_str = 'Move to the portal'
             if t_str is not None:
-                self.font.draw_str(t_str,
+                self.font.draw_str_in(t_str,
                                    (0, 1080 - self.tile_size * 2),
+                                   (1440, self.tile_size * 2),
                                    (1, 1, 1, 1),
-                                   (self.base_text_scale,) * 2)
+                                   (self.base_text_scale,) * 2,
+                                   alignment=text.CENTER_TOP)
         
         # Blackout effect
         if self.blackout > 0:
