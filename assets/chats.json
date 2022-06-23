@@ -2,47 +2,21 @@
     "test_chat": {
         "message": "Hello stranger",
         "icon": "potion",
-        "choices": ["Give me money", "I wanna buy", "I wanna sell back", "Die"],
+        "choices": ["I wanna sell back"],
         "next": [
         {
-            "name": "give_money",
-            "predicate": {
-                "kind": "choice",
-                "num": 0
-            }
-        },
-        {
-            "name": "buy",
+            "name": "sell",
             "predicate": {
                 "kind": "and",
                 "predicates": [
                 {
                     "kind": "choice",
-                    "num": 1
+                    "num": 0
                 },
                 {
-                    "kind": "var",
-                    "name": "coins",
-                    "value": 3,
-                    "function": ">="
-                }
-                ]
-            }
-        },
-        {
-            "name": "fail",
-            "predicate": {
-                "kind": "and",
-                "predicates": [
-                {
-                    "kind": "choice",
-                    "num": 1
-                },
-                {
-                    "kind": "var",
-                    "name": "coins",
-                    "value": 3,
-                    "function": "<"
+                    "kind": "has_item",
+                    "item": "Ichor",
+                    "value": 1
                 }
                 ]
             }
@@ -54,24 +28,7 @@
                 "predicates": [
                 {
                     "kind": "choice",
-                    "num": 2
-                },
-                {
-                    "kind": "has_item",
-                    "item": "Ichor",
-                    "value": 1
-                }
-                ]
-            }
-        },
-        {
-            "name": "fail",
-            "predicate": {
-                "kind": "and",
-                "predicates": [
-                {
-                    "kind": "choice",
-                    "num": 2
+                    "num": 0
                 },
                 {
                     "kind": "not",
@@ -83,46 +40,6 @@
                 }
                 ]
             }
-        },
-        {
-            "name": "die",
-            "predicate": {
-                "kind": "choice",
-                "num": 3
-            }
-        }
-        ]
-    },
-    "give_money": {
-        "message": "Have some cash bruh",
-        "icon": "potion",
-        "actions": [
-        {
-            "kind": "var",
-            "name": "coins",
-            "value": 5,
-            "function": "+"
-        }
-        ]
-    },
-    "fail": {
-        "message": "Get outta here broke ass man.",
-        "icon": "potion"
-    },
-    "buy": {
-        "message": "Hehe... have an Ichor bruh...",
-        "icon": "potion",
-        "actions": [
-        {
-            "kind": "give",
-            "item": "Ichor",
-            "amount": 1
-        },
-        {
-            "kind": "var",
-            "name": "coins",
-            "value": 3,
-            "function": "-"
         }
         ]
     },
@@ -143,15 +60,6 @@
         }
         ]
     },
-    "die": {
-        "message": "Goodbye",
-        "icon": "potion",
-        "actions": [
-        {
-            "kind": "die"
-        }
-        ]
-    },
     "warp": {
         "message": "See ya home boy",
         "icon": "potion",
@@ -165,6 +73,98 @@
             "kind": "var",
             "name": "world_gen",
             "value": "mainworld"
+        }
+        ]
+    },
+    "buy_fireball": {
+        "message": "Would you like to buy Fireball for 20 coins?",
+        "icon": "fireball",
+        "choices": ["Yes", "No"],
+        "next": [
+        {
+            "name": "buy_fireball_fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 20,
+                    "function": "<"
+                }
+                ]
+            }
+        },
+        {
+            "name": "buy_fireball_succeed",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 20,
+                    "function": ">="
+                }
+                ]
+            }
+        },
+        {
+            "name": "buy_fireball_pass",
+            "predicate": {
+                "kind": "choice",
+                "num": 1
+            }
+        }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "w-A-n-t u f-A-Y-r-b-AU-L",
+            "frequency": 200
+        }
+        ]
+    },
+    "buy_fireball_pass": {
+        "message": "Fine",
+        "icon": "fireball"
+    },
+    "buy_fireball_fail": {
+        "message": "You don't have enough money! Come back when you aren't so broke.",
+        "icon": "fireball"
+    },
+    "buy_fireball_succeed": {
+        "message": "Righty then, here you go!",
+        "icon": "fireball",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 20,
+            "function": "-"
+        },
+        {
+            "kind": "give",
+            "item": "Fireball",
+            "amount": 1
+        },
+        {
+            "kind": "var",
+            "name": "Fireball",
+            "persists": true,
+            "value": true,
+            "function": "="
+        },
+        {
+            "kind": "die"
         }
         ]
     }

@@ -10,6 +10,8 @@
         "keys",
         "weapons",
         "spells",
-        "sounds"
+        "sounds",
+        "spawns",
+        "phonemes"
     ]
 }

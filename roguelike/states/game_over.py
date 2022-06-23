@@ -95,6 +95,7 @@ class GameOverState(ui.PoppableMenu):
     def quit_game(self):
         logging.debug('Quitting game')
         self.manager.state_stack.clear()
+        assets.running = False
     
     @classmethod
     def init_resources(cls) -> None:

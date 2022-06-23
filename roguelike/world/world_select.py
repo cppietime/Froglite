@@ -1,3 +1,4 @@
+import logging
 import threading
 from typing import (
     TYPE_CHECKING
@@ -90,13 +91,13 @@ class WorldSelect(ui.PoppableMenu):
         self.holder.scroll = numb > self.scroll_threshold
     
     def button_chose(self, name: str) -> None:
+        logging.debug(f'Chosen {name}')
         assets.variables['world_gen'] = name
         def _thread():
             map_size = (20, 20) # TODO
             tile_size = settings.BASE_TILE_SIZE
             game_over.reset_func()
             gen = world_gen.world_generators[name]
-            dmap = gen.generate_world(map_size)
             state = dungeon.DungeonMapState(tile_size=tile_size,
                                             base_generator=gen,
                                             base_size=map_size)

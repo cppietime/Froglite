@@ -5,6 +5,7 @@ from dataclasses import (
 )
 from enum import Enum
 import heapq
+import logging
 import math
 import random
 from typing import (
@@ -129,10 +130,6 @@ class DungeonMapSpawner:
         else:
             dungeon_map.player =\
                 player.PlayerEntity(dungeon_pos=list(self.player_pos))
-            
-            # For debugging purposes
-            dungeon_map.player.inventory.give_item(consumables.items['Ancient sword of Coriander'], 7)
-            dungeon_map.player.inventory.give_item(consumables.items['Ichor'], 7)
         
         return dungeon_map
 
@@ -276,6 +273,7 @@ class DungeonMapState(gamestate.GameState):
             self.dungeon_map.player)
     
     def respawn(self):
+        logging.debug('Respawning')
         self.generate_from(self.starting_generator, self.starting_size)
         self.dungeon_map = self.dungeon_map_spec.spawn_map()
         self.blackout = 0.

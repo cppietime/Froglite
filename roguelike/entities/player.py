@@ -19,7 +19,8 @@ from roguelike.engine import (
 from roguelike.entities import entity
 from roguelike.bag import (
     inventory_state,
-    item
+    item,
+    spells
 )
 from roguelike.states import game_over
 
@@ -50,8 +51,12 @@ class PlayerEntity(entity.FightingEntity):
         if 'coins' not in assets.variables:
             assets.variables['coins'] = 0
         
+        for name, spell in spells.items.items():
+            if assets.persists.get(name, False) and self.inventory[spell] == 0:
+                self.inventory.give_item(spell, 1)
+        
         # DEBUGGING
-        self.inventory.give_item(item.items['Fireball'], 1)
+        # self.inventory.give_item(item.items['Fireball'], 1)
     
     walk_length: ClassVar[float] = .25
     

@@ -24,11 +24,15 @@
         "tile": {
             "kind": "pass"
         },
+        "spawns": [
+        
+        ],
         "border": 1,
         "tiles": [
         "floor", "wall", "badfloor"
         ],
-        "music": "med.mid"
+        "music": "med.mid",
+        "boredom": 5
     },
     "bspworld": {
         "wall": {
@@ -65,39 +69,16 @@
         "floor", "wall", "badfloor"
         ],
         "spawns": [
-        {
-            "class": "Pursuant",
-            "animation": "slow_chaser",
-            "max_hp": 20,
-            "action_cost": 2,
-            "limit": 4,
-            "attack": 10,
-            "defense": 1,
-            "gold": 4,
-            "atk_mul": 0.25,
-            "def_mul": 0.25,
-            "drops": [],
-            "weight": 3
-        },
-        {
-            "class": "ItemEntity",
-            "item": "Fireball",
-            "count": 1,
-            "limit": 10,
-            "weight": 1
-        },
-        {
-            "class": "NPCEntity",
-            "animation": "player",
-            "chat": "warp",
-            "weight": 10
-        }
+            "slow_chaser",
+            "buy_fireball"
         ],
-        "boredom": 5,
+        "boredom": 4,
         "exits": [
         {
-            "key": "Key"
-        }
+            "key": "Key",
+            "count": [1, 3]
+        },
+        {}
         ],
         "music": "midi.mid"
     },

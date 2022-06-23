@@ -187,11 +187,11 @@ class Renderer:
         
         tex_size = sprite.texture.size
         program['uv_bottom_left'] = sprite.topleft_texels[0] / tex_size[0],\
-            (tex_size[1] - 1 -
+            (tex_size[1] -
              sprite.topleft_texels[1]
              - sprite.size_texels[1]) / tex_size[1]
-        program['uv_size'] = (sprite.size_texels[0] / tex_size[0],
-                              sprite.size_texels[1] / tex_size[1])
+        program['uv_size'] = ((sprite.size_texels[0] - 1) / tex_size[0],
+                              (sprite.size_texels[1] - 1) / tex_size[1])
         program['angle'] = angle + sprite.angle
         
         if 'colorMask' in program:

@@ -1,7 +1,7 @@
 {
     "Knife": {
-        "description": "Knice\nx2 Attack",
+        "description": "Knice\nAttack: x2",
         "attack": 2,
-        "icon": "potion"
+        "icon": "knife"
     }
 }

@@ -1,9 +1,9 @@
 {
     "Fireball": {
-        "animation": "player",
+        "animation": "fireball",
         "reach": 4,
         "attack": 10,
-        "icon": "potion",
-        "description": "Fireball spell"
+        "icon": "fireball",
+        "description": "Fireball spell\nReach: 4 straight\nPower: 10"
     }
 }

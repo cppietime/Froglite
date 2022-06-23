@@ -9,7 +9,7 @@
     "tile": {
         "texture": "tile",
         "many": true,
-        "offsets": [ [0, 0], [0, 0], [0, 0], [0, 0], [0, 0] ],
+        "offsets": [ [64, 0], [64, 0], [64, 0], [64, 0], [128, 0] ],
         "sizes": [ [64, 64] ],
         "colors": [
             [1, 0, 0, 1],
@@ -21,8 +21,23 @@
     },
     "vignette": {"texture": "vignette"},
     "potion": {
-        "texture": "consumables",
-        "offset": [0, 0],
+        "texture": "items",
+        "offset": [96, 0],
+        "size": [32, 32]
+    },
+    "key": {
+        "texture": "items",
+        "offset": [32, 0],
+        "size": [32, 32]
+    },
+    "knife": {
+        "texture": "items",
+        "offset": [64, 0],
+        "size": [32, 32]
+    },
+    "fireball": {
+        "texture": "items",
+        "offset": [128, 0],
         "size": [32, 32]
     },
     "slow_chaser": {

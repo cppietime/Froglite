@@ -200,6 +200,8 @@ def clear_blockage(dists: npt.NDArray[np.float64]) ->\
         ~(down_right & right & up_right & up & up_left)
     blockage |= down & right & ~down_right &\
         ~(down_left & left & up_left & up & up_right)
+    blockage |= up & down & ~left & ~right
+    blockage |= left & right & ~up & ~down
     return blockage
 
 def group(size: Pos,

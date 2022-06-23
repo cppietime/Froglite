@@ -7,8 +7,8 @@
         "source": "button_bg.png",
         "filter": 9728
     },
-    "consumables": {
-        "source": "consumables.png",
+    "items": {
+        "source": "items.png",
         "filter": 9728
     },
     "effects": {
@@ -18,7 +18,8 @@
         "source": "player_debug.png"
     },
     "tile": {
-        "source": "tile.png"
+        "source": "tile.png",
+        "filter": 9728
     },
     "vignette": {
         "source": "vignette.png"

@@ -75,6 +75,7 @@ def warp(state: dungeon.DungeonMapState,
          world_type_name: str,
          size: Tuple[int, int],
          reset: bool=False) -> None:
+    logging.debug(f'Warping to {world_type_name}')
     def _script(_state, event):
         world_type = world_gen.world_generators[world_type_name]
         while _state.locked():

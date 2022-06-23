@@ -1,7 +1,9 @@
 import collections
 import json
+import logging
 import math
 import os
+import random
 import sys
 import threading
 from typing import (
@@ -19,6 +21,7 @@ from typing import (
 import moderngl as mgl # type: ignore
 import pygame as pg
 
+import lpyc_tts_shotgunllama as tts
 from roguelike.engine import (
     sprite
 )
@@ -188,6 +191,7 @@ class Sounds:
     def __init__(self):
         self.sounds: Dict[str, pg.mixer.Sound] = {}
         self.volume = 1.
+        self.song: Optional[str] = None
     
     def __getattr__(self, name: str) -> pg.mixer.Sound:
         return self.sounds[name]
@@ -199,14 +203,19 @@ class Sounds:
             self.volume = max(self.volume - .1, 0.)
         for sound in self.sounds.values():
             sound.set_volume(self.volume)
+        pg.mixer.music.set_volume(self.volume)
     
     def play_music(self, pat: str) -> None:
         pat = asset_path(os.path.join('music', pat))
         def _thread():
-            if pg.mixer.music.get_busy():
+            logging.debug(f'Music thread playing {pat}')
+            if pg.mixer.music.get_busy() and self.song != pat:
+                logging.debug('Fading out')
                 pg.mixer.music.fadeout(500)
+                logging.debug('Fade called')
             pg.mixer.music.load(pat)
             pg.mixer.music.play(loops=-1)
+            self.song = pat
         threading.Thread(target=_thread).start()
     
     @staticmethod
@@ -216,6 +225,38 @@ class Sounds:
             path = asset_path(path)
             sound = pg.mixer.Sound(path)
             Sounds.instance.sounds[name] = sound
+
+class Voice:
+    instance: 'Voice'
+    def __init__(self, phonemes: Sequence[str], base_dir: str):
+        self.sounds: Dict[Tuple[str, float], pg.mixer.Sound] = {}
+        self.phonology = tts.phoneme.Phonology.load(phonemes, base_dir)
+    
+    def speak(self, sentence: str, freq: float = 100, **kwargs) -> None:
+        key = (sentence, freq)
+        if key in self.sounds:
+            self.sounds[key].set_volume(Sounds.instance.volume)
+            self.sounds[key].play()
+            return
+        def _thread():
+            sampls = self.phonology.play_str(sentence, base_freq=freq)
+            rate, _, channels = pg.mixer.get_init()
+            ba = bytearray()
+            for samp in sampls:
+                short = min(32767, max(-32768, int(samp * 32767)))
+                ba += (short & 0xffff).to_bytes(2, 'little') * channels
+            bs = bytes(ba)
+            sound = pg.mixer.Sound(buffer=bs)
+            sound.set_volume(Sounds.instance.volume)
+            self.sounds[key] = sound
+            sound.play(**kwargs)
+            logging.debug(f'Generated sound for {sentence} at {freq} hz')
+        threading.Thread(target=_thread).start()
+    
+    @classmethod
+    def load(cls, phonemes: Sequence[str]) -> None:
+        pat = asset_path('phonemes')
+        cls.instance = Voice(phonemes, pat)
 
 residuals: Dict[str, Any] = {}
 variables: Dict[str, Any] = collections.defaultdict(lambda: None)
@@ -231,6 +272,7 @@ def load_assets(renderer: 'Renderer', source: str) -> None:
         with open(asset_path(filename+'.json')) as file:
             fdata: Dict[str, Any] = json.load(file)
         residuals[filename] = fdata
+        logging.debug(f'Loaded asset file {filename}')
     Textures.load_textures(renderer,
                            cast(Dict[str, Dict[str, str]],
                            residuals.pop('textures')))
@@ -239,6 +281,7 @@ def load_assets(renderer: 'Renderer', source: str) -> None:
     Animations.load_animations(cast(Dict[str, Any],
                                residuals.pop('animations')))
     Sounds.load_sounds(residuals.pop('sounds'))
+    Voice.load(residuals.pop('phonemes'))
 
 def save_path():
     if hasattr(sys, 'frozen'):

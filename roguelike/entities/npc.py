@@ -59,7 +59,8 @@ def parse_predicate(source: Dict[str, Any]) -> ChatPredicate:
         name = cast(str, source['name'])
         value: Any = source['value']
         comp = cast(str, source.get('function', '='))
-        return VarPredicate(name, value, comp)
+        persists = cast(bool, source.get('persists', False))
+        return VarPredicate(name, value, comp, persists)
     elif kind == 'not':
         negative_dict = cast(Dict[str, Any], source['predicate'])
         negative = parse_predicate(negative_dict)
@@ -100,9 +101,11 @@ class VarPredicate:
     varname: str
     value: Any
     comp: str
+    persists: bool = False
     
     def is_fulfilled(self, _: 'ChatPromptState') -> bool:
-        value: Any = assets.variables[self.varname]
+        pool = assets.persists if self.persists else assets.variables
+        value: Any = pool[self.varname]
         if self.comp == '=':
             return value == self.value
         elif self.comp == '>':
@@ -172,8 +175,9 @@ def parse_action(source: Dict[str, Any]) -> ChatAction:
     elif kind == 'var':
         varname = cast(str, source['name'])
         value: Any = source['value']
-        func: str = cast(str, source.get('function', '='))
-        return VarAction(varname, value, func)
+        func = cast(str, source.get('function', '='))
+        persists = cast(bool, source.get('persists', False))
+        return VarAction(varname, value, func, persists)
     elif kind == 'die':
         return DieAction()
     elif kind == 'warp':
@@ -181,6 +185,10 @@ def parse_action(source: Dict[str, Any]) -> ChatAction:
         size = cast(Pos, tuple(source['size']))
         reset = source.get('reset', False)
         return WarpAction(name, size, reset)
+    elif kind == 'speak':
+        sentence = source['sentence']
+        frequency = cast(float, source.get('frequency', 100))
+        return SpeakAction(sentence, frequency)
     else:
         raise ValueError(f'{kind} is not a valid action')
 
@@ -214,15 +222,17 @@ class VarAction:
     varname: str
     value: Any
     func: str
+    persists: bool = False
     
     def perform_action(self,
                        state: 'ChatPromptState') -> bool:
+        pool = assets.persists if self.persists else assets.variables
         if self.func == '=':
-            assets.variables[self.varname] = self.value
+            pool[self.varname] = self.value
         elif self.func == '+':
-            assets.variables[self.varname] += self.value
+            pool[self.varname] += self.value
         elif self.func == '-':
-            assets.variables[self.varname] -= self.value
+            pool[self.varname] -= self.value
         else:
             raise ValueError(f'{self.func} is not a valid function')
         return True
@@ -250,6 +260,14 @@ class WarpAction:
                        state: 'ChatPromptState') -> bool:
         dms = cast('DungeonMapState', state.manager.state_stack[-2])
         lvl_entity.warp(dms, self.world_type_name, self.world_size, self.reset)
+        return True
+
+@dataclass
+class SpeakAction:
+    sentence: str
+    frequency: float = 100
+    def perform_action(self, _: 'ChatPromptState') -> bool:
+        assets.Voice.instance.speak(self.sentence, self.frequency)
         return True
 
 @dataclass

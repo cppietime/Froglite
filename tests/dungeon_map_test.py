@@ -25,7 +25,8 @@ from roguelike.entities import (
     item_entity,
     player,
     slow_chaser,
-    npc
+    npc,
+    spawn
 )
 from roguelike.bag import (
     consumables,
@@ -50,7 +51,7 @@ tile_clear = 0
 meta_map = [0, 1]
 world_name = 'bspworld'
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 # Initialize context and screen
 pg.mixer.pre_init(channels=1)
@@ -83,6 +84,7 @@ spells.init_items()
 weapons.init_items()
 npc.init_chats()
 world_gen.init_generators()
+spawn.init()
 ui.Button.sound = assets.Sounds.instance.ding
 ui.WidgetHolder.sound = assets.Sounds.instance.ding
 ui.PoppableMenu.pop_sound = assets.Sounds.instance.ding
@@ -101,12 +103,12 @@ game_over.reset_func = reset_func
 # Generate the map multi-threadedly
 def _thread():
     game_over.reset_func()
-    dmap = gener.generate_world(map_size)
+    # dmap = gener.generate_world(map_size)
     state = dungeon.DungeonMapState(tile_size=tile_size,
                                     base_generator=gener,
                                     base_size=map_size)
     manager.push_state(state)
-thread = threading.Thread(target=_thread)
+# thread = threading.Thread(target=_thread)
 # thread.start()
 
 menu_state = world_select.WorldSelect()
@@ -173,6 +175,8 @@ while assets.running:
     if f_no == 1000:
         f_no = 0
         logging.info(f'FPS: {clock.get_fps()}')
+
+logging.debug('Running terminated')
 
 assets.save_save()
 pg.quit()

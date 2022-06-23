@@ -7,6 +7,8 @@ from dataclasses import (
 )
 import logging
 import random
+import sys
+import traceback
 from typing import (
     cast,
     Any,
@@ -52,6 +54,8 @@ from roguelike.entities import (
 Pos = Tuple[int, int]
 WallGrid = npt.NDArray[np.int32]
 TileGrid = npt.NDArray[np.int32]
+
+MAX_SIZE = 50
 
 class WallGenerator(Protocol):
     """Assigns each space in a grid to a certain class of tile"""
@@ -460,8 +464,11 @@ class WorldGenerator:
                              -np.inf, dists).argmax(),
                     size[0])[::-1])
         logging.debug(f'Exit is at {furthest_away}')
+        w, h = size
+        w = min(w + random.randint(0, 1), MAX_SIZE)
+        h = min(h + random.randint(0, 1), MAX_SIZE)
         spawner.spawns.append((furthest_away, lvl_entity.LadderEntity,
-                               {'size': size, 'key_item': key_item,
+                               {'size': (w, h), 'key_item': key_item,
                                 'key_count': key_count}))
         # TODO generate main goal(i.e. exit to next level)
         hot_path = utils.trace_djikstra(furthest_away, dists)
@@ -485,7 +492,6 @@ class WorldGenerator:
             spawner.spawns.append(chosen_spawn)
             fun_path = utils.trace_djikstra(boring_pos, dists)
             dists = utils.populate_djikstra(costs, fun_path, dists)
-        logging.debug(f'List of spawns = {spawner.spawns}')
         if self.music is not None:
             assets.Sounds.instance.play_music(self.music)
         return spawner

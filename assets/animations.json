@@ -53,5 +53,13 @@
         "animation": {
             "DEFAULT": {"DEFAULT": ["shadow"]}
         }
+    },
+    "fireball": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["fireball"]
+            }
+        }
     }
 }
