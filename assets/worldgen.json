@@ -1,41 +1,6 @@
 {
-    "mainworld": {
-        "wall": {
-            "kind": "wfc",
-            "source": "map_sample.png",
-            "pattern_size": [3, 3],
-            "palette": [0, 1],
-            "border": [1]
-        },
-        "features": [
-        {
-            "kind": "join",
-            "passable": [0],
-            "inside": 0,
-            "outside": 1
-        },
-        {
-            "kind": "dla",
-            "num": 20,
-            "sticky": 0,
-            "out": true
-        }
-        ],
-        "tile": {
-            "kind": "pass"
-        },
-        "spawns": [
-        
-        ],
-        "border": 1,
-        "tiles": [
-        "floor", "wall", "badfloor"
-        ],
-        "music": "med.mid",
-        "boredom": 5
-    },
     "bspworld": {
-        "display": "Ole' Caves",
+        "display": "Shallow Caves",
         "wall": {
             "kind": "bsp",
             "leaf_size": [6, 6],
@@ -57,19 +22,20 @@
             "kind": "pass"
         },
         "border": 1,
-        "tiles": [
-        "floor", "wall", "badfloor"
-        ],
+        "tiles": ["floor", "wall"],
         "spawns": [
         {
             "name": "slow_chaser",
             "limit": 7,
-            "weight": 1
+            "weight": 4,
+            "predicates": [
+            ["difficulty", ">", 0, false]
+            ]
         },
         {
             "name": "med_chaser",
             "limit": 6,
-            "weight": 1,
+            "weight": 4,
             "predicates": [
             ["difficulty", ">", 7, false]
             ]
@@ -78,25 +44,98 @@
             "name": "buy_fireball",
             "limit": 1,
             "predicates": [
-            ["Fireball", "!=", true, true],
+            ["fireball", "!=", true, true],
             ["difficulty", ">", 7, false]
             ],
+            "weight": 8
+        },
+        {
+            "name": "warp_tunnels",
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">", 9, false]
+            ],
             "weight": 4
+        },
+        {
+            "name": "npc_welcome",
+            "limit": 1,
+            "predicates": [
+            ["difficulty", "=", 1, false]
+            ],
+            "weight": 4000
+        },
+        {
+            "name": "npc_infested",
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">=", 4, false],
+            ["difficulty", "<=", 6, false]
+            ],
+            "weight": 40
+        },
+        {
+            "name": "item_shop",
+            "limit": 1,
+            "weight": 1,
+            "predicates": [
+            ["difficulty", ">", 0, false]
+            ]
+        },
+        {
+            "name": "drop_knife",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 4, false],
+            ["difficulty", "<=", 14, false]
+            ]
+        },
+        {
+            "name": "drop_machette",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 14, false],
+            ["difficulty", "<=", 25, false]
+            ]
+        },
+        {
+            "name": "drop_club",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 25, false]
+            ]
         }
         ],
-        "boredom": 4,
+        "boredom": 5,
         "exits": [
         {
             "key": "Key",
-            "count": [1, 3]
+            "count": [1, 2],
+            "weight": 2,
+            "predicates": [
+            ["difficulty", ">", 0, false],
+            ["difficulty", "<", 15, false]
+            ]
         },
         {
-            "weight": 1.5
+            "key": "Key",
+            "count": [1, 4],
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">=", 15, false]
+            ]
+        },
+        {
+            "weight": 3
         }
         ],
-        "music": "midi.mid"
+        "music": "cave.mid"
     },
-    "whitenoise": {
+    "wind_tunnels": {
+        "display": "Wind Tunnels",
         "wall": {
             "kind": "white",
             "tiles": [0, 1]
@@ -123,19 +162,346 @@
             "kind": "pass"
         },
         "border": 1,
-        "tiles": ["floor", "wall"]
+        "tiles": ["floor", "wall"],
+        "spawns": [
+        {
+            "name": "slow_chaser",
+            "weight": 2
+        },
+        {
+            "name": "bug",
+            "weight": 3
+        },
+        {
+            "name": "warp_cavern",
+            "weight": 1,
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">", 10, false]
+            ]
+        },
+        {
+            "name": "npc_finite",
+            "weight": 10,
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">", 10, false]
+            ]
+        },
+        {
+            "name": "item_shop",
+            "limit": 1,
+            "weight": 1
+        },
+        {
+            "name": "buy_freeze",
+            "limit": 1,
+            "weight": 10,
+            "predicates": [
+            ["difficulty", ">", 19, false],
+            ["freeze", "!=", true, true]
+            ]
+        },
+        {
+            "name": "drop_knife",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 4, false],
+            ["difficulty", "<=", 14, false]
+            ]
+        },
+        {
+            "name": "drop_machette",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 14, false],
+            ["difficulty", "<=", 25, false]
+            ]
+        },
+        {
+            "name": "drop_club",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 25, false]
+            ]
+        }
+        ],
+        "boredom": 5,
+        "music": "wind.mid"
     },
     "perlin": {
+        "display": "Caverns",
         "wall": {
             "kind": "perlin",
             "tiles": [0, 1, 1],
             "scale": [4, 4]
         },
-        "features": [],
+        "features": [
+        {
+            "kind": "join",
+            "passable": [0],
+            "inside": 0,
+            "outside": 1,
+            "border": 1
+        }
+        ],
         "tile": {
             "kind": "pass"
         },
         "tiles": ["floor", "wall"],
-        "border": 1
+        "border": 1,
+        "spawns": [
+        {
+            "name": "med_chaser",
+            "limit": 5,
+            "weight": 6
+        },
+        {
+            "name": "fast_chaser",
+            "limit": 5,
+            "weight": 8,
+            "predicates": [
+            ["difficulty", ">", 1, false]
+            ]
+        },
+        {
+            "name": "npc_empty",
+            "limit": 1,
+            "weight": 20,
+            "predicates": [
+            ["difficulty", ">=", 11, false],
+            ["difficulty", "<=", 15, false]
+            ]
+        },
+        {
+            "name": "warp_hell",
+            "limit": 1,
+            "weight": 16,
+            "predicates": [
+            ["difficulty", ">", 12, false]
+            ]
+        },
+        {
+            "name": "item_shop",
+            "limit": 1,
+            "weight": 1
+        },
+        {
+            "name": "drop_knife",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 4, false],
+            ["difficulty", "<=", 14, false]
+            ]
+        },
+        {
+            "name": "drop_machette",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 14, false],
+            ["difficulty", "<=", 25, false]
+            ]
+        },
+        {
+            "name": "drop_club",
+            "limit": 1,
+            "weight": 3,
+            "predicates": [
+            ["difficulty", ">", 25, false]
+            ]
+        }
+        ],
+        "music": "cavern.mid",
+        "boredom": 6
+    },
+    "hell": {
+        "display": "Hell",
+        "wall": {
+            "kind": "bsp",
+            "inside": 0,
+            "outside": 1,
+            "border": 1,
+            "join": true,
+            "leaf_size": [6, 6]
+        },
+        "features": [
+        {
+            "kind": "dla",
+            "num": 20,
+            "sticky": 0,
+            "out": true
+        },
+        {
+            "kind": "join",
+            "passable": [0],
+            "inside": 0,
+            "outside": 1,
+            "border": 1
+        }
+        ],
+        "tile": {
+            "kind": "pass"
+        },
+        "spawns": [
+        {
+            "name": "npc_flesh",
+            "limit": 1,
+            "weight": 4,
+            "predicates": [
+            ["difficulty", ">", 11, false]
+            ]
+        },
+        {
+            "name": "fast_chaser",
+            "limit": 6,
+            "weight": 6
+        },
+        {
+            "name": "bug",
+            "limit": 2,
+            "weight": 2
+        },
+        {
+            "name": "hulk",
+            "limit": 5,
+            "weight": 8,
+            "predicates": [
+            ["difficulty", ">", 4, false]
+            ]
+        },
+        {
+            "name": "demon",
+            "limit": 3,
+            "weight": 6,
+            "predicates": [
+            ["difficulty", ">", 9, false]
+            ]
+        },
+        {
+            "name": "hell_item_shop",
+            "limit": 1,
+            "weight": 2
+        }
+        ],
+        "tiles": ["glowstone", "lava"],
+        "border": 1,
+        "boredom": 4,
+        "music": "hell.mid",
+        "boredom": 4
+    },
+    "flesh": {
+        "display": "Flesh Pit",
+        "wall": {
+            "kind": "white",
+            "tiles": [0, 1]
+        },
+        "features": [
+        {
+            "kind": "cellular",
+            "full": [1],
+            "clear_with": 0,
+            "fill_with": 1,
+            "clear_below": 4,
+            "fill_from": 5,
+            "iterations": 6
+        },
+        {
+            "kind": "join",
+            "passable": [0],
+            "inside": 0,
+            "outside": 1,
+            "border": 1
+        }
+        ],
+        "tile": {
+            "kind": "pass"
+        },
+        "tiles": ["flesh", "bone"],
+        "border": 1,
+        "spawns": [
+        {
+            "name": "drop_cleaver",
+            "limit": 1,
+            "weight": 1,
+            "predicates": [
+            ["difficulty", ">", 5, false]
+            ]
+        },
+        {
+            "name": "drop_staff",
+            "limit": 1,
+            "weight": 1,
+            "predicates": [
+            ["difficulty", ">", 3, false]
+            ]
+        },
+        {
+            "name": "t_cell",
+            "limit": 6,
+            "weight": 2
+        },
+        {
+            "name": "platelet",
+            "limit": 6,
+            "weight": 3
+        },
+        {
+            "name": "adipocyte",
+            "limit": 2,
+            "weight": 1
+        },
+        {
+            "name": "embryo",
+            "limit": 2,
+            "weight": 2,
+            "predicates": [
+            ["difficulty", ">", 12, false]
+            ]
+        },
+        {
+            "name": "hell_item_shop",
+            "weight": 1,
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">", 7, false]
+            ]
+        }
+        ],
+        "boredom": 4,
+        "music": "hell.mid"
+    },
+    "wfc": {
+        "wall": {
+            "kind": "wfc",
+            "source": "map_sample.png",
+            "pattern_size": [3, 3],
+            "palette": [0, 1],
+            "border": [1]
+        },
+        "features": [
+        {
+            "kind": "join",
+            "passable": [0],
+            "inside": 0,
+            "outside": 1
+        }
+        ],
+        "tile": {
+            "kind": "pass"
+        },
+        "spawns": [
+        
+        ],
+        "border": 1,
+        "tiles": [
+        "floor", "wall", "badfloor"
+        ],
+        "music": "med.mid",
+        "boredom": 5
     }
 }

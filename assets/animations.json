@@ -6,6 +6,24 @@
                     "slow_chaser-0", "slow_chaser-1",
                     "slow_chaser-2", "slow_chaser-3"
                 ]
+            },
+            "WALK": {
+                "DEFAULT": [
+                    "slow_chaser-4", "slow_chaser-5",
+                    "slow_chaser-6", "slow_chaser-7"
+                ]
+            },
+            "ATTACK": {
+                "DEFAULT": [
+                    "slow_chaser-8", "slow_chaser-9",
+                    "slow_chaser-10", "slow_chaser-11"
+                ]
+            },
+            "HURT": {
+                "DEFAULT": [
+                    "slow_chaser-8", "slow_chaser-9",
+                    "slow_chaser-10", "slow_chaser-11"
+                ]
             }
         },
         "speed": 6
@@ -32,6 +50,130 @@
             }
         }
     },
+    "bug": {
+        "speed": 12,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["bug-0", "bug-1"]
+            },
+            "ATTACK": {
+                "UP": ["bug-2"],
+                "DEFAULT": ["bug-3"],
+                "RIGHT": ["bug-4"],
+                "LEFT": ["bug-5"]
+            }
+        }
+    },
+    "demon": {
+        "speed": 8,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["demon-0", "demon-1"]
+            },
+            "ATTACK": {
+                "UP": ["demon-2"],
+                "DEFAULT": ["demon-3"],
+                "RIGHT": ["demon-4"],
+                "LEFT": ["demon-5"]
+            }
+        }
+    },
+    "hulk": {
+        "speed": 8,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["hulk-0", "hulk-1"]
+            },
+            "ATTACK": {
+                "DEFAULT": ["hulk-2"],
+                "UP": ["hulk-3"],
+                "RIGHT": ["hulk-4"],
+                "LEFT": ["hulk-5"]
+            }
+        }
+    },
+    "silver": {
+        "speed": 8,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["silver-0"]
+            },
+            "WALK": {
+                "DEFAULT": ["silver-0", "silver-1", "silver-0", "silver-2"],
+                "RIGHT": ["silver-1"],
+                "LEFT": ["silver-2"]
+            },
+            "ATTACK": {
+                "DEFAULT": ["silver-3"],
+                "RIGHT": ["silver-4"],
+                "LEFT": ["silver-5"]
+            }
+        }
+    },
+    "gold": {
+        "speed": 8,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["gold-0"]
+            },
+            "WALK": {
+                "DEFAULT": ["gold-0", "gold-1", "gold-0", "gold-2"],
+                "RIGHT": ["gold-1"],
+                "LEFT": ["gold-2"]
+            },
+            "ATTACK": {
+                "DEFAULT": ["gold-3"],
+                "RIGHT": ["gold-4"],
+                "LEFT": ["gold-5"]
+            }
+        }
+    },
+    "platelet": {
+        "speed": 8,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["platelet-0", "platelet-1"],
+                "DOWN": ["platelet-4", "platelet-5"],
+                "LEFT": ["platelet-2", "platelet-3"],
+                "RIGHT": ["platelet-6", "platelet-7"]
+            }
+        }
+    },
+    "t_cell": {
+        "speed": 8,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["t_cell-0"]
+            },
+            "ATTACK": {
+                "DEFAULT": ["t_cell-1"],
+                "DOWN": ["t_cell-3"],
+                "LEFT": ["t_cell-2"],
+                "RIGHT": ["t_cell-4"]
+            },
+            "HURT": {
+                "DEFAULT": ["t_cell-5"]
+            }
+        }
+    },
+    "fat": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["fat"]
+            }
+        }
+    },
+    "embryo": {
+        "speed": 8,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["embryo-0", "embryo-1"],
+                "LEFT": ["embryo-0"],
+                "RIGHT": ["embryo-1"]
+            }
+        }
+    },
     "tile": {
         "speed": 1,
         "animation": {
@@ -45,6 +187,38 @@
         "animation": {
             "DEFAULT": {
                 "DEFAULT": ["tile-4"]
+            }
+        }
+    },
+    "tile_lava": {
+        "speed": 3,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["tile-5", "tile-6", "tile-7"]
+            }
+        }
+    },
+    "tile_hotrock": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["tile-8"]
+            }
+        }
+    },
+    "tile_bone": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["tile-9"]
+            }
+        }
+    },
+    "tile_flesh": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["tile-10", "tile-11"]
             }
         }
     },

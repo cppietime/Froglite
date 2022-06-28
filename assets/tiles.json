@@ -13,5 +13,25 @@
     "wall": {
         "animation": "wall",
         "passable": false
+    },
+    "glowstone": {
+        "animation": "tile_hotrock",
+        "passable": true
+    },
+    "lava": {
+        "animation": "tile_lava",
+        "passable": false,
+        "otype": "X_MINUS_Y",
+        "opow": 0.5
+    },
+    "flesh": {
+        "animation": "tile_flesh",
+        "passable": true,
+        "otype": "X",
+        "opow": 0.25
+    },
+    "bone": {
+        "animation": "tile_bone",
+        "passable": false
     }
 }

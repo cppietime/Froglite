@@ -219,7 +219,7 @@ class CharBank:
             rect = surf.get_rect()
             sum_w += rect.width
             max_h = max(max_h, rect.height)
-        fbo = renderer.register_fbo(None, (sum_w, max_h), 1, True, False)
+        fbo = renderer.register_fbo(None, (sum_w, max_h), 1, True, False, {'filter': (mgl.NEAREST, mgl.NEAREST)})
         fbo.use()
         tex = fbo.color_attachments[0]
         tex.filter = mgl.NEAREST, mgl.NEAREST

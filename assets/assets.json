@@ -12,6 +12,8 @@
         "spells",
         "sounds",
         "spawns",
-        "phonemes"
+        "phonemes",
+        "armor",
+        "charms"
     ]
 }

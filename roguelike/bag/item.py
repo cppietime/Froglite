@@ -45,6 +45,8 @@ class BaseItem:
     usable: ClassVar[bool] = False
     tossable: ClassVar[bool] = True
     equippable: ClassVar[bool] = False
+    bindable: ClassVar[bool] = False
+    castable: ClassVar[bool] = False
 
 @dataclass(frozen=True, eq=True)
 class ConsumableItem(BaseItem):
@@ -58,6 +60,7 @@ class ConsumableItem(BaseItem):
     
     itemslot = ItemSlot.CONSUMABLES
     usable = True
+    bindable = True
 
 @dataclass(frozen=True, eq=True)
 class KeyItem(BaseItem):
@@ -110,7 +113,7 @@ class CharmItem(EquipableItem):
     equip_slot = EquipmentSlot.CHARM
 
 @dataclass(frozen=True, eq=True)
-class SpellItem(EquipableItem):
+class SpellItem(BaseItem):
     """Not really an item but it can be accessed through the
     player's inventory all the same
     """
@@ -119,9 +122,12 @@ class SpellItem(EquipableItem):
         pass
     
     itemslot = ItemSlot.SPELLS
-    equip_slot = EquipmentSlot.SPELL
+    bindable = True
+    castable = True
+    tossable = False
 
 class Inventory:
+    num_slots: ClassVar[int] = 9
     def __init__(self, *args, **kwargs):
         self.owner: 'FightingEntity' = kwargs.pop('owner', None)
         super().__init__(*args, **kwargs)
@@ -131,6 +137,7 @@ class Inventory:
         self.equipment: Dict[EquipmentSlot, BaseItem] = {
             eqtype: None for eqtype in EquipmentSlot
         }
+        self.bound: List[Optional[BaseItem]] = [None] * self.num_slots
     
     def __getitem__(self, key: Union[ItemSlot, BaseItem, EquipmentSlot])\
             -> Union[OrderedDict[BaseItem, int], int, BaseItem, None]:
@@ -141,6 +148,8 @@ class Inventory:
             return slots.get(key, 0)
         elif isinstance(key, EquipmentSlot):
             return self.equipment.get(key, None)
+        elif isinstance(key, int):
+            return self.bound[key]
         raise ValueError('Key must be ItemSlot or BaseItem')
     
     def __contains__(self, item: BaseItem) -> bool:
@@ -158,6 +167,8 @@ class Inventory:
         current_count = slots.get(item, 0)
         if current_count < count:
             return False
+        if current_count == count == 0:
+            return True
         slots[item] -= count
         if slots[item] == 0:
             slots.pop(item)
@@ -165,6 +176,20 @@ class Inventory:
     
     def equipped(self, item: EquipableItem) -> bool:
         return self.equipment[item.equip_slot] is item
+    
+    def bound_slot(self, item: BaseItem) -> int:
+        for i, slot in enumerate(self.bound):
+            if slot is None:
+                continue
+            if item.name == slot.name:
+                return i
+        return -1
+    
+    def bind(self, index: int, item: BaseItem) -> None:
+        already = self.bound_slot(item)
+        if already != -1:
+            self.bound[already] = None
+        self.bound[index] = item
 
 items: Dict[str, BaseItem] = {}
     

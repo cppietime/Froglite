@@ -93,11 +93,6 @@ def parse_spawn(source: Dict[str, Any]) -> Spawn:
     class_name = cast(str, source.pop('class', None))
     clazz = None if class_name is None else entity.entities[class_name]
     anim_name = cast(Optional[str], source.pop('animation', None))
-    # limit = source.pop('limit', -1)
-    # weight = source.pop('weight', 1)
-    # diff = cast(Pos, tuple(source.pop('difficulty', [-1, -1])))
-    # preds = cast(Predicates,
-                 # tuple(map(tuple, source.pop('predicates', []))))
     params = dict(source)
     if anim_name is not None:
         if anim_name in assets.Animations.instance.animations:

@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     cast,
     Any,
@@ -18,25 +19,12 @@ from roguelike.engine import (
 if TYPE_CHECKING:
     from roguelike.engine.gamestate import GameState
     from roguelike.entities.entity import FightingEntity
+    from roguelike.entities.player import PlayerEntity
     from roguelike.bag.inventory_state import UseTossScreen
 
-potion: item.ConsumableItem
-
-# Now unused
-def healing_fn(amount):
-    def _fn(map_state: 'GameState',
-            ui_state: 'GameState',
-            user: 'FightingEntity') -> None:
-        ui_state = cast('UseTossScreen', ui_state)
-        ui_state.display_message(f"You drank a potion! The aetherial energies swirl within you and rejuvinate your body. Blessed by its healing power, you regain {amount} HP...")
-        user.hp += amount
-        def _event(state, event):
-            while state.locked():
-                yield True
-            user.pain_particle(map_state, f"+{amount}", (0, 1, 0, 1))
-            yield False
-        map_state.queue_event(event_manager.Event(_event))
-    return _fn
+class RestorationTarget(Enum):
+    HP = 0
+    MP = 1
 
 class HealthRestorationItem(item.ConsumableItem):
     def __init__(self,
@@ -45,7 +33,8 @@ class HealthRestorationItem(item.ConsumableItem):
                  display: str,
                  icon: sprite.Sprite,
                  message: str,
-                 amount: float):
+                 amount: float,
+                 target: RestorationTarget):
         super().__init__(name=name,
                          description=description,
                          display=display,
@@ -53,18 +42,30 @@ class HealthRestorationItem(item.ConsumableItem):
                          on_use=self.on_use)
         self.message = message
         self.amount = amount
+        self.target = target
     
     def on_use(self,
                map_state: 'GameState',
                ui_state: Optional['GameState'],
                user: 'FightingEntity') -> None:
-        ui_state = cast('UseTossScreen', ui_state)
-        ui_state.display_message(self.message.format(self.amount))
-        user.hp += self.amount
+        if ui_state is not None:
+            ui_state = cast('UseTossScreen', ui_state)
+            ui_state.display_message(self.message.format(self.amount))
+        healed = self.amount
+        if self.target == RestorationTarget.HP:
+            # Do I want to limit healed HP to the max HP?
+            user.hp += self.amount
+            color = (0, 1, 0, 1)
+        elif self.target == RestorationTarget.MP:
+            assert hasattr(user, 'mp')
+            player = cast('PlayerEntity', user)
+            healed = min(player.max_mp - player.mp, self.amount)
+            player.mp += healed
+            color = (0, 1, 1, 1)
         def _event(state, event):
             while state.locked():
                 yield True
-            user.pain_particle(map_state, f"+{self.amount}", (0, 1, 0, 1))
+            user.pain_particle(map_state, f"+{healed}", color)
             yield False
         map_state.queue_event(event_manager.Event(_event))
     
@@ -76,8 +77,9 @@ class HealthRestorationItem(item.ConsumableItem):
                params: Dict[str, Any]) -> 'HealthRestorationItem':
         amount = int(params['amount'])
         message = cast(str, params['message'])
+        target = RestorationTarget[params.get('type', 'HP').upper()]
         return HealthRestorationItem(
-            name, description, display_name, icon, message, amount)
+            name, description, display_name, icon, message, amount, target)
 
 # Dict mapping "kind" values to functions to call to create the items
 # by their JSON objects
@@ -90,7 +92,7 @@ items: Dict[str, item.ConsumableItem] = {}
 
 def init_items() -> None:
     """Call me to initialize consumables"""
-    item_specs = assets.residuals['consumables']
+    item_specs = assets.residuals.pop('consumables')
     for name, value in item_specs.items():
         description = cast(str, value['description'])
         icon_key = cast(str, value['icon'])

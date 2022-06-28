@@ -19,6 +19,7 @@ from typing import (
 )
 
 import moderngl as mgl # type: ignore
+import numpy as np
 import pygame as pg
 
 import lpyc_tts_shotgunllama as tts # type: ignore
@@ -28,6 +29,9 @@ from roguelike.engine import (
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
+
+DEBUG = True
+GAME_DIR_NAME = '.this_game' # TODO Set this
 
 def asset_path(base_path: str) -> str:
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -196,27 +200,31 @@ class Sounds:
     def __getattr__(self, name: str) -> pg.mixer.Sound:
         return self.sounds[name]
     
-    def adjust_vol(self, up: bool) -> None:
-        if up:
-            self.volume = min(self.volume + .1, 1.)
-        else:
-            self.volume = max(self.volume - .1, 0.)
+    def set_volume(self, volume: float) -> None:
+        self.volume = min(1., max(0., volume))
         for sound in self.sounds.values():
             sound.set_volume(self.volume)
         pg.mixer.music.set_volume(self.volume)
     
-    def play_music(self, pat: str) -> None:
+    def adjust_vol(self, up: bool) -> None:
+        self.set_volume(self.volume + (.1 if up else -.1))
+    
+    def play_music(self, pat: str, fadeout: int = 500) -> None:
         pat = asset_path(os.path.join('music', pat))
+        if pat == self.song and pg.mixer.music.get_busy():
+            return
         def _thread():
             logging.debug(f'Music thread playing {pat}')
             if pg.mixer.music.get_busy() and self.song != pat:
-                logging.debug('Fading out')
-                pg.mixer.music.fadeout(500)
-                logging.debug('Fade called')
+                pg.mixer.music.fadeout(fadeout)
             pg.mixer.music.load(pat)
             pg.mixer.music.play(loops=-1)
             self.song = pat
         threading.Thread(target=_thread).start()
+    
+    def stop_music(self, fadeout: int = 500) -> None:
+        if pg.mixer.music.get_busy():
+            pg.mixer.music.fadeout(fadeout)
     
     @staticmethod
     def load_sounds(source: Dict[str, Any]) -> None:
@@ -241,11 +249,15 @@ class Voice:
         def _thread():
             sampls = self.phonology.play_str(sentence, base_freq=freq)
             rate, _, channels = pg.mixer.get_init()
-            ba = bytearray()
-            for samp in sampls:
-                short = min(32767, max(-32768, int(samp * 32767)))
-                ba += (short & 0xffff).to_bytes(2, 'little') * channels
-            bs = bytes(ba)
+            sampls = np.asanyarray(sampls, dtype=float) * 32767
+            sampls = sampls.round().astype('<i2')
+            sampls = np.clip(sampls, -32768, 32767).repeat(channels)
+            bs = sampls.tobytes()
+            # ba = bytearray()
+            # for samp in sampls:
+                # short = min(32767, max(-32768, int(samp * 32767)))
+                # ba += (short & 0xffff).to_bytes(2, 'little') * channels
+            # bs = bytes(ba)
             sound = pg.mixer.Sound(buffer=bs)
             sound.set_volume(Sounds.instance.volume)
             self.sounds[key] = sound
@@ -286,7 +298,7 @@ def load_assets(renderer: 'Renderer', source: str) -> None:
 def save_path():
     if hasattr(sys, 'frozen'):
         basedir = os.path.abspath(os.path.expanduser('~'))
-        basedir = os.path.join(basedir, '.this_game')
+        basedir = os.path.join(basedir, GAME_DIR_NAME)
         if not os.path.exists(basedir):
             os.mkdir(basedir)
     else:
@@ -296,7 +308,6 @@ def save_path():
     return os.path.abspath(os.path.join(basedir, 'save'))
 
 def load_save():
-    global variables, persists
     save_file = save_path()
     if not os.path.exists(save_file):
         return
@@ -306,8 +317,10 @@ def load_save():
     saved_p = vp['persists']
     variables.update(saved_v)
     persists.update(saved_p)
+    Sounds.instance.set_volume(persists.get('_volume', 100) / 100.)
 
 def save_save():
+    persists['_volume'] = int(round(Sounds.instance.volume * 100))
     vp = {'variables': variables, 'persists': persists}
     with open(save_path(), 'w') as file:
         json.dump(vp, file)

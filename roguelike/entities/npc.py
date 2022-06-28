@@ -214,7 +214,8 @@ class TakeAction:
         itm = item.items[self.item_name]
         if inventory[itm] < self.amount:
             return False
-        inventory.take_item(itm, self.amount)
+        amount = self.amount if self.amount >= 0 else inventory[itm]
+        inventory.take_item(itm, amount)
         return True
 
 @dataclass
@@ -419,6 +420,7 @@ class ChatPromptState(ui.MenuState):
             self.choice_menu.buffer_display = 0
             self.choice_menu.zero_point = 0
         self.choice_menu.selection = 0
+        self.chat_box_button.enabled = False
         self.holder.selection = 1 # Select the submenu
         self.holder.widgets.append(self.choice_menu)
         self.menu_up = True

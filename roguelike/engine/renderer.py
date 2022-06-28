@@ -229,7 +229,11 @@ class Renderer:
             program[key] = value
         vao.render()
     
-    def apply_bloom(self, size: int, passes: int, threshold:float=0.9)->None:
+    def apply_bloom(self,
+                    size: int,
+                    passes: int,
+                    threshold:float=0.9,
+                    strength: float=0.5)->None:
         current = self.gl_ctx.fbo
         if current == self.screen:
             raise AttributeError('Cannot bloom directly from screen')
@@ -268,7 +272,7 @@ class Renderer:
         
         # pingpong0 holds the original image, pingpong1 holds the blur
         self.fbos['pingpong1'].color_attachments[0].use(1)
-        self.fbo_to_fbo(current, self.fbos['pingpong0'], 'add', addition=1)
+        self.fbo_to_fbo(current, self.fbos['pingpong0'], 'add', addition=1, factor=strength)
     
     def _safe_current(self,
                       dst: Optional[mgl.Framebuffer])\

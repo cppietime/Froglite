@@ -69,7 +69,13 @@ class PursuantEnemy(entity.EnemyEntity):
     def take_action(self,
                       state: 'GameState',
                       player_pos: Tuple[int, int]) -> None:
-        super().chase_player(state, player_pos, -1)
+        sup = super()
+        def _event(_state, event):
+            while _state.locked():
+                yield True
+            sup.chase_player(_state, player_pos, -1)
+            yield False
+        state.start_event(event_manager.Event(_event))
 
 entity.entities['Pursuant'] = PursuantEnemy
 

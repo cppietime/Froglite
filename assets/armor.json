@@ -1,0 +1,19 @@
+{
+    "bandage": {
+        "description": "Reduces damage a little bit\nDefense x1.5",
+        "icon": "bandage",
+        "defense": 1.5
+    },
+    "cyst": {
+        "display": "Cyst Suit",
+        "description": "Hardened tissues block incoming damage\nDefense x1.8",
+        "icon": "bandage",
+        "defense": 1.8
+    },
+    "amnion": {
+        "display": "Amnion",
+        "description": "If it works for an embryo, it can work for you\nDefense x2",
+        "icon": "bandage",
+        "defense": 2
+    }
+}

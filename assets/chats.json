@@ -1,82 +1,5 @@
 {
-    "test_chat": {
-        "message": "Hello stranger",
-        "icon": "potion",
-        "choices": ["I wanna sell back"],
-        "next": [
-        {
-            "name": "sell",
-            "predicate": {
-                "kind": "and",
-                "predicates": [
-                {
-                    "kind": "choice",
-                    "num": 0
-                },
-                {
-                    "kind": "has_item",
-                    "item": "Ichor",
-                    "value": 1
-                }
-                ]
-            }
-        },
-        {
-            "name": "sell",
-            "predicate": {
-                "kind": "and",
-                "predicates": [
-                {
-                    "kind": "choice",
-                    "num": 0
-                },
-                {
-                    "kind": "not",
-                    "predicate": {
-                        "kind": "has_item",
-                        "item": "Ichor",
-                        "value": 1
-                    }
-                }
-                ]
-            }
-        }
-        ]
-    },
-    "sell": {
-        "message": "I'll buy it back",
-        "icon": "potion",
-        "actions": [
-        {
-            "kind": "take",
-            "item": "Ichor",
-            "amount": 1
-        },
-        {
-            "kind": "var",
-            "name": "coins",
-            "value": 3,
-            "function": "+"
-        }
-        ]
-    },
-    "warp": {
-        "message": "See ya home boy",
-        "icon": "potion",
-        "actions": [
-        {
-            "kind": "warp",
-            "world_gen": "mainworld",
-            "size": [20, 20]
-        },
-        {
-            "kind": "var",
-            "name": "world_gen",
-            "value": "mainworld"
-        }
-        ]
-    },
-    "buy_fireball": {
+    "buy_fireball_open": {
         "message": "Would you like to buy Fireball for 20 coins?",
         "icon": "fireball",
         "choices": ["Yes", "No"],
@@ -153,18 +76,597 @@
         },
         {
             "kind": "give",
-            "item": "Fireball",
+            "item": "fireball",
             "amount": 1
         },
         {
             "kind": "var",
-            "name": "Fireball",
+            "name": "fireball",
             "persists": true,
             "value": true,
             "function": "="
         },
         {
             "kind": "die"
+        }
+        ]
+    },
+    "buy_freeze_open": {
+        "message": "These cavernous spaces are crawling with quick-moving dangers. If only you could slow them down... Pay me 125 and I will teach you how to freeze them in their tracks.",
+        "choices": ["Do it!", "No"],
+        "next": [
+        {
+            "name": "buy_freeze_fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 125,
+                    "persists": false,
+                    "function": "<"
+                }
+                ]
+            }
+        },
+        {
+            "name": "buy_freeze_succeed",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 125,
+                    "persists": false,
+                    "function": ">="
+                }
+                ]
+            }
+        },
+        {
+            "name": "buy_freeze_pass",
+            "predicate": {
+                "kind": "choice",
+                "num": 1
+            }
+        }
+        ]
+    },
+    "buy_freeze_succeed": {
+        "message": "You will not regret this choice.",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "persists": false,
+            "value": 125,
+            "function": "-"
+        },
+        {
+            "kind": "var",
+            "name": "freeze",
+            "persists": true,
+            "value": true,
+            "function": "="
+        },
+        {
+            "kind": "give",
+            "item": "freeze",
+            "amount": 1
+        },
+        {
+            "kind": "die"
+        }
+        ]
+    },
+    "buy_freeze_fail": {
+        "message": "Ah... stranger... if only you weren't so poor. I'd happily do business with you, but not like this."
+    },
+    "buy_freeze_pass": {
+        "message": "Do not be so overconfident in your abilities as they stand, stranger. I will not withdraw my offer."
+    },
+    "shop_open": {
+        "message": "Indeed, stranger, I am a traveling merchant. Take a look at my wears.",
+        "choices": ["Coffee: $15", "Inhalant: $75", "Cortisol: $200", "Leave"],
+        "next": [
+        {
+            "name": "shop_fail",
+            "predicate": {
+                "kind": "or",
+                "predicates": [
+                {
+                    "kind": "and",
+                    "predicates": [
+                    {
+                        "kind": "choice",
+                        "num": 0
+                    },
+                    {
+                        "kind": "var",
+                        "name": "coins",
+                        "value": 15,
+                        "function": "<",
+                        "persists": false
+                    }
+                    ]
+                },
+                {
+                    "kind": "and",
+                    "predicates": [
+                    {
+                        "kind": "choice",
+                        "num": 1
+                    },
+                    {
+                        "kind": "var",
+                        "name": "coins",
+                        "value": 75,
+                        "function": "<",
+                        "persists": false
+                    }
+                    ]
+                },
+                {
+                    "kind": "and",
+                    "predicates": [
+                    {
+                        "kind": "choice",
+                        "num": 2
+                    },
+                    {
+                        "kind": "var",
+                        "name": "coins",
+                        "value": 200,
+                        "function": "<",
+                        "persists": false
+                    }
+                    ]
+                }
+                ]
+            }
+        },
+        {
+            "name": "shop_pass",
+            "predicate": {
+                "kind": "choice",
+                "num": 3
+            }
+        },
+        {
+            "name": "shop_buy_dew",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 15,
+                    "function": ">=",
+                    "persists": false
+                }
+                ]
+            }
+        },
+        {
+            "name": "shop_buy_potion",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 1
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 75,
+                    "function": ">=",
+                    "persists": false
+                }
+                ]
+            }
+        },
+        {
+            "name": "shop_buy_ichor",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 2
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 200,
+                    "function": ">=",
+                    "persists": false
+                }
+                ]
+            }
+        }
+        ]
+    },
+    "shop_fail": {
+        "message": "Don't toy with me! I will trade with you for what you can afford!"
+    },
+    "shop_pass": {
+        "message": "Very well. Do come back again."
+    },
+    "shop_buy_dew": {
+        "message": "Jolly good, one Coffee for you!",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 15,
+            "function": "-",
+            "persists": false
+        },
+        {
+            "kind": "give",
+            "item": "dew",
+            "amount": 1
+        }
+        ]
+    },
+    "shop_buy_potion": {
+        "message": "Jolly good, one Inhalant for you!",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 75,
+            "function": "-",
+            "persists": false
+        },
+        {
+            "kind": "give",
+            "item": "potion",
+            "amount": 1
+        }
+        ]
+    },
+    "shop_buy_ichor": {
+        "message": "Jolly good, one Cortisol for you!",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 200,
+            "function": "-",
+            "persists": false
+        },
+        {
+            "kind": "give",
+            "item": "ichor",
+            "amount": 1
+        }
+        ]
+    },
+    "hell_shop_open": {
+        "message": "Indeed, stranger, I am a traveling merchant. Take a look at my wears.",
+        "choices": ["Cortisol: $666", "Leave"],
+        "next": [
+        {
+            "name": "hell_shop_fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 666,
+                    "function": "<",
+                    "persists": false
+                }
+                ]
+            }
+        },
+        {
+            "name": "hell_shop_pass",
+            "predicate": {
+                "kind": "choice",
+                "num": 1
+            }
+        },
+        {
+            "name": "hell_shop_buy_ichor",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 666,
+                    "function": ">=",
+                    "persists": false
+                }
+                ]
+            }
+        }
+        ]
+    },
+    "hell_shop_fail": {
+        "message": "Don't toy with me! I will trade with you for what you can afford!"
+    },
+    "hell_shop_pass": {
+        "message": "Very well. Do come back again."
+    },
+    "hell_shop_buy_ichor": {
+        "message": "Jolly good, one Cortisol for you!",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 666,
+            "function": "-",
+            "persists": false
+        },
+        {
+            "kind": "give",
+            "item": "ichor",
+            "amount": 1
+        }
+        ]
+    },
+    "warp_tunnels_open": {
+        "message": "For the low low price of $100, I will send you to the Wind Tunnels.",
+        "choices": ["Let's go!", "No thanks"],
+        "next": [
+        {
+            "name": "warp_tunnels_fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 100,
+                    "function": "<"
+                }
+                ]
+            }
+        },
+        {
+            "name": "warp_tunnels_succeed",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 100,
+                    "function": ">="
+                }
+                ]
+            }
+        },
+        {
+            "name": "warp_tunnels_pass",
+            "predicate": {
+                "kind": "choice",
+                "num": 1
+            }
+        }
+        ]
+    },
+    "warp_tunnels_fail": {
+        "message": "You are broke!"
+    },
+    "warp_tunnels_succeed": {
+        "message": "Watch your step!",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 100,
+            "function": "-"
+        },
+        {
+            "kind": "warp",
+            "world_gen": "wind_tunnels",
+            "size": [20, 20],
+            "reset": true
+        },
+        {
+            "kind": "var",
+            "name": "world_gen",
+            "value": "wind_tunnels",
+            "function": "="
+        },
+        {
+            "kind": "take",
+            "item": "Key",
+            "amount": -1
+        }
+        ]
+    },
+    "warp_tunnels_pass": {
+        "message": "Come find me again if you change your mind."
+    },
+    "warp_cavern_open": {
+        "message": "I need to get out of here. I need to fly away. If you have 2 Bug Wings, I will take you with me.",
+        "choices": ["Okay", "No"],
+        "next": [
+        {
+            "name": "warp_cavern_fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "not",
+                    "predicate": {
+                        "kind": "has_item",
+                        "item": "bug_wings",
+                        "value": 2
+                    }
+                }
+                ]
+            }
+        },
+        {
+            "name": "warp_cavern_succeed",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "has_item",
+                    "item": "bug_wings",
+                    "value": 2
+                }
+                ]
+            }
+        },
+        {
+            "name": "warp_cavern_pass",
+            "predicate": {
+                "kind": "choice",
+                "num": 1
+            }
+        }
+        ]
+    },
+    "warp_cavern_fail": {
+        "message": "Aw man. You don't have the wings!"
+    },
+    "warp_cavern_succeed": {
+        "message": "Hell yeah, let's get outta here!",
+        "actions": [
+        {
+            "kind": "take",
+            "item": "bug_wings",
+            "amount": 2
+        },
+        {
+            "kind": "warp",
+            "world_gen": "perlin",
+            "size": [20, 20],
+            "reset": true
+        },
+        {
+            "kind": "var",
+            "name": "world_gen",
+            "value": "perlin",
+            "function": "="
+        }
+        ]
+    },
+    "warp_cavern_pass": {
+        "message": "Go on, I'll manage somehow."
+    },
+    "warp_hell_open": {
+        "message": "Ah, a stranger, how nice. Tell me, would you like to experience eternity?",
+        "choices": ["Yes", "Nah"],
+        "next": [
+        {
+            "name": "warp_hell_succeed",
+            "predicate": {
+                "kind": "choice",
+                "num": 0
+            }
+        },
+        {
+            "name": "warp_hell_fail",
+            "predicate": {
+                "kind": "choice",
+                "num": 1
+            }
+        }
+        ]
+    },
+    "warp_hell_fail": {
+        "message": "You are short sighted. You will experience a finite existence only to wither away and cease with no understanding of what you even are."
+    },
+    "warp_hell_succeed": {
+        "message": "Excellent. May you learn the true meaning of torment...",
+        "actions": [
+        {
+            "kind": "var",
+            "persists": false,
+            "name": "world_gen",
+            "value": "hell",
+            "function": "="
+        },
+        {
+            "kind": "warp",
+            "world_gen": "hell",
+            "size": [20, 20],
+            "reset": true
+        }
+        ]
+    },
+    "npc_welcome": {
+        "message": "Hello, stranger. These caves can be tricky. Keep an eye out. Down here, pure flesh is sought out the most."
+    },
+    "npc_infested": {
+        "message": "You aren't from here. These caverns are infested with creatures of hunger only, not of reason. Study their patterns and outsmart them."
+    },
+    "npc_finite": {
+        "message": "You are a stranger. Your finite brain cannot comprehend the depth and depravity of this realm. But then again, who am I to talk?"
+    },
+    "npc_dont_listen": {
+        "message": "Don't listen to these other NPCs. There is no goal to life. There is no point in death."
+    },
+    "npc_exit": {
+        "message": "Why can't I exit? I can only ever go deeper into these catacombs."
+    },
+    "npc_no_home": {
+        "message": "Keep searching, stranger. No matter how far you search, you will never find a home."
+    },
+    "npc_came_here": {
+        "message": "I can see it in your face. You came here of your own will. You wanted to find a place you belong. You've thrown away everything you used to have, all for the hope that you find something new. Now here you are, and what do you have? As for me? Well, I suppose we are all the same."
+    },
+    "npc_empty": {
+        "message": "It's good to see another mind in this space, even if it's one like yours. These caverns are truly cavernous. Huge spaces with only an occasional hostility to meet your path. Keep pushing, stranger. Maybe you will find something down the way."
+    },
+    "npc_flesh": {
+        "message": "This may be the end of the line. For you, for me. Is this death? All that remains is the embodiment of life, flesh itself, but here, we have long passed the chance to join it. Maybe if you would go back, if you searched deeper than you ever thought reasonable where it all began, you could find something new.",
+        "actions": [
+        {
+            "kind": "var",
+            "persists": true,
+            "name": "spoke_flesh",
+            "value": true,
+            "function": "="
         }
         ]
     }

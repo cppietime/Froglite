@@ -1,7 +1,25 @@
 {
-    "Knife": {
+    "knife": {
         "description": "Knice\nAttack: x2",
         "attack": 2,
+        "icon": "knife"
+    },
+    "machette": {
+        "display": "Machette",
+        "description": "Thick and strong\nAttack: x3",
+        "attack": 3,
+        "icon": "knife"
+    },
+    "club": {
+        "display": "Thick Club",
+        "description": "This is your first time clubbing\nAttack: x4",
+        "attack": 4,
+        "icon": "knife"
+    },
+    "cleaver": {
+        "display": "Meat Cleaver",
+        "description": "Good for anything that moves\nAttack: x4",
+        "attack": 4,
         "icon": "knife"
     }
 }

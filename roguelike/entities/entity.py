@@ -3,6 +3,8 @@ from dataclasses import (
     field
 )
 from enum import Enum
+import logging
+import random
 from typing import (
     cast,
     Callable,
@@ -30,6 +32,8 @@ from roguelike.engine import (
 from roguelike.entities import (
     spawn
 )
+from roguelike.states import ui
+from roguelike.world import particle
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
@@ -105,7 +109,7 @@ class Entity:
         if self.anim is not None:
             self.anim.render(renderer,
                              pos,
-                             (self.rect.w, self.rect.h),
+                             size,
                              angle=self.rect.rotation)
             self.anim.increment(delta_time)
         elif isinstance(self.class_anim, sprite.Sprite):
@@ -261,6 +265,15 @@ class FightingEntity(Entity):
                 attacker: Optional['FightingEntity'],
                 damage: int) -> bool:
         """Returns whether self is still alive after taking the hit"""
+        if self.anim is not None and attacker is not None:
+            if attacker.dungeon_pos[0] > self.dungeon_pos[0]:
+                self.anim.direction = sprite.AnimDir.RIGHT
+            elif attacker.dungeon_pos[0] < self.dungeon_pos[0]:
+                self.anim.direction = sprite.AnimDir.LEFT
+            elif attacker.dungeon_pos[1] > self.dungeon_pos[1]:
+                self.anim.direction = sprite.AnimDir.DOWN
+            elif attacker.dungeon_pos[1] < self.dungeon_pos[1]:
+                self.anim.direction = sprite.AnimDir.UP
         self.hp -= damage
         if self.hp <= 0:
             self.entity_die(state, attacker)
@@ -295,10 +308,20 @@ class FightingEntity(Entity):
         state = cast('DungeonMapState', state)
         self._melee_attack_logic(state, target)
         my_anim = self.anim
+        other_x: float = target.dungeon_pos[0]
+        other_y: float = target.dungeon_pos[1]
         if my_anim is not None:
             my_anim.state = sprite.AnimState.ATTACK
-        other_x = target.dungeon_pos[0] * state.tile_size
-        other_y = target.dungeon_pos[1] * state.tile_size
+            if other_x > self.dungeon_pos[0]:
+                my_anim.direction = sprite.AnimDir.RIGHT
+            elif other_x < self.dungeon_pos[0]:
+                my_anim.direction = sprite.AnimDir.LEFT
+            elif other_y > self.dungeon_pos[1]:
+                my_anim.direction = sprite.AnimDir.DOWN
+            elif other_y < self.dungeon_pos[1]:
+                my_anim.direction = sprite.AnimDir.UP
+        other_x *= state.tile_size
+        other_y *= state.tile_size
         def _script(_state, event):
             while _state.locked():
                 yield True
@@ -314,7 +337,7 @@ class FightingEntity(Entity):
                 yield True
             target.get_hit(_state, self, damage)
             yield not _state.locked()
-        state.queue_event(event_manager.Event(_script))
+        state.start_event(event_manager.Event(_script))
     
     def effective_attack(self) -> float:
         return self.attack_stat
@@ -323,7 +346,7 @@ class FightingEntity(Entity):
         return self.defense_stat
     
     def effective_magic(self) -> float:
-        return 1
+        return 1.
     
 class ActingEntity(FightingEntity):
     """Entities that take actions between turns
@@ -341,11 +364,14 @@ class ActingEntity(FightingEntity):
     name = 'Actor'
     
     detection_radius: ClassVar[int] = -1
+    particle_delay: ClassVar[float] = .15
     
     def __init__(self, *args, **kwargs):
         self.action_cost: float = kwargs.pop('action_cost')
         self.energy = 0.
         super().__init__(*args, **kwargs)
+        self.particle_timer = 0
+        self.particles: List[particle.DungeonParticle] = []
     
     def expend_energy(self,
                       state: gamestate.GameState,
@@ -387,6 +413,53 @@ class ActingEntity(FightingEntity):
                                         tween.shake(self.hit_bounces))
             return True
         return False
+    
+    # def update_entity(self, delta_time, state, player_pos):
+        # super().update_entity(delta_time, state, player_pos)
+        # state = cast('DungeonMapState', state)
+        # if self.energy < 0:
+            # # Render frozen particles
+            # self.particle_timer += delta_time
+            # while self.particle_timer >= self.particle_delay:
+                # self.particle_timer -= self.particle_delay
+                # # x = self.rect.x + random.random() * self.rect.w
+                # y = self.rect.y + random.random() * self.rect.h
+                # dx = (2 * random.random() - 1) * self.rect.h
+                # x = self.rect.x + (self.rect.w + dx) / 2
+                # rect = tween.AnimatableMixin(x, y, 24, 24)
+                # msg = '#'
+                # color = (0, .8, 1, 1)
+                # motion = tween.Animation([
+                    # (0, tween.Tween(rect, 'y', y, y - self.rect.h, .5,
+                                    # interpolation=tween.parabola(.4))),
+                    # (0, tween.Tween(rect, 'x', x, x + dx / 2, .5)),
+                # ])
+                # state.spawn_particle(rect, motion, msg, color)
+                
+    def render_entity_post(self, delta_time, renderer, base_offset):
+        if self.energy < 0:
+            # Render frozen particles
+            self.particle_timer += delta_time
+            while self.particle_timer >= self.particle_delay:
+                self.particle_timer -= self.particle_delay
+                # x = self.rect.x + random.random() * self.rect.w
+                y = self.rect.y + random.random() * self.rect.h
+                dx = (2 * random.random() - 1) * self.rect.h
+                x = self.rect.x + (self.rect.w + dx) / 2
+                rect = tween.AnimatableMixin(x, y, 24, 24)
+                msg = '#'
+                color = (0, .8, 1, 1)
+                motion = tween.Animation([
+                    (0, tween.Tween(rect, 'y', y, y - self.rect.h, .5,
+                                    interpolation=tween.parabola(.4))),
+                    (0, tween.Tween(rect, 'x', x, x + dx / 2, .5)),
+                ])
+                ptcl = particle.DungeonParticle(
+                    rect, motion, None, msg, color, ui.default_font)
+                self.particles.append(ptcl)
+        self.particles = [p for p in self.particles\
+            if p.render_particle(delta_time, renderer, base_offset)]
+        super().render_entity_post(delta_time, renderer, base_offset)
 
 class EnemyEntity(ActingEntity):
     """Base class for enemies
@@ -409,8 +482,8 @@ class EnemyEntity(ActingEntity):
         def_mul = cast(float, kwargs.pop('def_mul', 0.))
         super().__init__(*args, **kwargs)
         difficulty: int = assets.variables['difficulty']
-        self.attack_stat *= 1 + atk_mul * difficulty
-        self.defense_stat *= 1 + def_mul * difficulty
+        self.attack_stat += atk_mul * difficulty
+        self.defense_stat += def_mul * difficulty
     
     step_len_s: ClassVar[float] = .25
     
@@ -455,6 +528,7 @@ class EnemyEntity(ActingEntity):
                     next_step):
             if my_anim is not None:
                 my_anim.speed = 1
+            logging.debug(len(state.active_events))
             self.animate_stepping_to(state,
                                      (self.dungeon_pos[0] * state.tile_size,
                                       self.dungeon_pos[1] * state.tile_size),

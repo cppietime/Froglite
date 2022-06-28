@@ -74,6 +74,19 @@ class InventoryBaseScreen(ui.PoppableMenu):
             inactive_bg_sprite=self.inactive_button_bg
         ))
         self.mainholder.widgets.append(ui.build_button_widget(
+            "Settings",
+            [(1440 - self.button_w) / 2 + self.button_margin_x,
+             self.button_y,
+             self.button_w - self.button_margin_x * 2,
+             self.button_h],
+            self.header_scale,
+            (self.button_text_padding_x, self.button_text_padding_y),
+            lambda _: self.open_settings(),
+            alignment=text.CENTER_CENTER,
+            active_bg_sprite=self.active_button_bg,
+            inactive_bg_sprite=self.inactive_button_bg
+        ))
+        self.mainholder.widgets.append(ui.build_button_widget(
             "Quit",
             [(1440 - self.button_w) / 2 + self.button_margin_x,
              self.button_y,
@@ -165,9 +178,17 @@ class InventoryBaseScreen(ui.PoppableMenu):
             yield False
         self.manager.state_stack[-2].queue_event(event_manager.Event(_then))
     
+    def open_settings(self) -> None:
+        # settings_state = SettingsScreen()
+        self.manager.push_state(_settingsscreen)
+    
     @classmethod
     def init_globs(cls) -> None:
-        global _itemslotsubscreens, _itemusescreen, _usetossscreen
+        global _itemslotsubscreens,\
+               _itemusescreen,\
+               _usetossscreen,\
+               _bindscreen,\
+               _settingsscreen
         cls.font = ui.default_font
         w = cls.button_w - (cls.button_text_padding_x + cls.button_margin_x)* 2
         h = cls.button_h - cls.button_text_padding_y * 2
@@ -182,6 +203,8 @@ class InventoryBaseScreen(ui.PoppableMenu):
         }
         _usetossscreen = UseTossScreen()
         _itemusescreen = ItemUseConfirmation()
+        _bindscreen = BindScreen()
+        _settingsscreen = SettingsScreen()
         
 class ItemSlotSubscreen(ui.PoppableMenu):
     """Screen for one item slot in inventory"""
@@ -339,12 +362,16 @@ class ItemSlotSubscreen(ui.PoppableMenu):
                 equipment = cast(item.EquipableItem, itm)
                 if self.inventory.equipped(equipment):
                     text += "\nEquipped"
+            slotno = self.inventory.bound_slot(itm)
+            if slotno != -1:
+                text += f"\nBound to {slotno + 1}"
         self.desc_widget.text = text
         super().render_gamestate(delta_time, renderer)
     
     def _on_button_press(self, i: int) -> None:
         itm, count = list(self.slot.items())[i]
-        if not itm.usable and not itm.tossable and not itm.equippable:
+        if not itm.usable and not itm.tossable and not itm.equippable\
+                and not itm.bindable:
             return
         _usetossscreen._build_menu(itm,
                                    count,
@@ -418,6 +445,15 @@ class UseTossScreen(ui.PoppableMenu):
             alignment=text.CENTER_CENTER,
             active_bg_sprite=InventoryBaseScreen.active_button_bg,
             inactive_bg_sprite=InventoryBaseScreen.inactive_button_bg)
+        self.button_bind = ui.build_button_widget(
+            "Bind",
+            [*margins, self.button_width, self.button_height],
+            None, #InventoryBaseScreen.header_scale,
+            margins,
+            lambda _: self.bind(),
+            alignment=text.CENTER_CENTER,
+            active_bg_sprite=InventoryBaseScreen.active_button_bg,
+            inactive_bg_sprite=InventoryBaseScreen.inactive_button_bg)
         self.button_toss = ui.build_button_widget(
             "Toss",
             [*margins, self.button_width, self.button_height],
@@ -465,6 +501,8 @@ class UseTossScreen(ui.PoppableMenu):
                 self.button_equip.active.widget.text = "Equip"
                 self.button_equip.inactive.widget.text = "Equip"
             self.holder.widgets.append(self.button_equip)
+        if self.item.bindable:
+            self.holder.widgets.append(self.button_bind)
         if self.item.tossable:
             tossable = True
             if self.item.equippable:
@@ -513,6 +551,12 @@ class UseTossScreen(ui.PoppableMenu):
         self.parent._build_menu(self.parent.slot, self.parent.inventory)
         self._trigger_pop()
     
+    def bind(self):
+        self.auto_pop = True
+        # bindscreen = BindScreen(item=self.item, inventory=self.inventory)
+        _bindscreen._build_menu(self.item, self.inventory)
+        self.manager.push_state(_bindscreen)
+    
     def _trigger_pop(self):
         self.die()
 
@@ -554,6 +598,146 @@ class ItemUseConfirmation(ui.PoppableMenu):
     def _trigger_pop(self):
         self.die()
 
+class BindScreen(ui.PoppableMenu):
+    start_y: ClassVar[float] = 1080 - 350
+    end_y: ClassVar[float] = 1080
+    width: ClassVar[float] = 1440
+    padding: ClassVar[float] = 60
+    def __init__(self, *args, **kwargs):
+        # self.inventory = kwargs.pop('inventory')
+        # self.item = kwargs.pop('item')
+        super().__init__(*args, **kwargs)
+        self.obscures = False
+        self.holder = self.widget.widget
+        self.textbox = ui.Label(bg=InventoryBaseScreen.active_button_bg,
+                                bg_rect=[
+                                    0, self.start_y, self.width,
+                                    self.end_y - self.start_y],
+                                text="Choose 1 through 9 to bind to",
+                                text_rect=[
+                                    self.padding, self.start_y + self.padding,
+                                    self.width - self.padding * 2,
+                                    self.end_y - self.start_y\
+                                        - self.padding * 2],
+                                    text_color=[0, 0, 0, 1],
+                                font=ui.default_font,
+                                scale=InventoryBaseScreen.text_scale,
+                                alignment=text.LEFT_TOP)
+        self.holder.widgets.append(self.textbox)
+    
+    def _build_menu(self, itm: item.BaseItem, inv: item.Inventory) -> None:
+        self.inventory = inv
+        self.item = itm
+    
+    def update_gamestate(self, delta_time):
+        super().update_gamestate(delta_time)
+        numkey = self.inputstate.test_num_key(inputs.KeyState.DOWN)
+        if numkey > 0:
+            self.inventory.bind(numkey - 1, self.item)
+            self._trigger_pop()
+    
+    def _trigger_pop(self):
+        self.die()
+
+class SettingsScreen(ui.PoppableMenu):
+    button_w = 1440 // 3
+    button_h = 1080 // 6
+    padding_x = 20
+    padding_y = 20
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.obscures = False
+        self.holder = self.widget.widget
+        self.holder.base_offset.x = (1440 - self.button_w) / 2
+        self.holder.scroll = False
+        self.holder.buffer_display = 0
+        self.holder.spacing = self.button_h + self.padding_y
+        self.volume_btn = ui.build_button_widget(
+            txt="PLACEHOLDER",
+            rect=[0, 0, self.button_w, self.button_h],
+            scale=None,
+            alignment=text.CENTER_CENTER,
+            margins=(self.padding_x, self.padding_y),
+            active_bg_sprite=InventoryBaseScreen.active_button_bg,
+            inactive_bg_sprite=InventoryBaseScreen.inactive_button_bg,
+            command=SettingsScreen.toggle_mute)
+        self.holder.widgets.append(self.volume_btn)
+        self.back_btn = ui.build_button_widget(
+            txt="Back",
+            rect=[0, 0, self.button_w, self.button_h],
+            scale=None,
+            alignment=text.CENTER_CENTER,
+            margins=(self.padding_x, self.padding_y),
+            active_bg_sprite=InventoryBaseScreen.active_button_bg,
+            inactive_bg_sprite=InventoryBaseScreen.inactive_button_bg,
+            command=SettingsScreen._trigger_pop)
+        self.holder.widgets.append(self.back_btn)
+        self.base_y = (1080\
+            - self.holder.spacing * len(self.holder.widgets)) / 2
+        self.holder.base_offset.y = 1080
+        self.callbacks_on_push.append(SettingsScreen._rise_up)
+        
+    def _trigger_pop(self):
+        def _anim(state, event):
+            while state.locked():
+                yield True
+            anim = tween.Animation([
+                (0., tween.Tween(self.holder.base_offset,
+                                 'y',
+                                 self.base_y,
+                                 1080,
+                                 .25))
+            ])
+            anim.attach(state)
+            state.begin_animation(anim)
+            while state.locked():
+                yield True
+            self.die()
+            yield False
+        self.queue_event(event_manager.Event(_anim))
+    
+    def _rise_up(self):
+        self.holder.base_offset.y = 1080
+        def _anim(state, event):
+            while state.locked():
+                yield True
+            anim = tween.Animation([
+                (0., tween.Tween(self.holder.base_offset,
+                                 'y',
+                                 1080,
+                                 self.base_y,
+                                 .25))
+            ])
+            anim.attach(state)
+            state.begin_animation(anim)
+            while state.locked():
+                yield True
+            state.manager.state_stack[-2].obscured = True
+            yield False
+        self.queue_event(event_manager.Event(_anim))
+    
+    def render_gamestate(self, renderer, delta_time):
+        vol_txt = f'Volume: {int(assets.Sounds.instance.volume * 10):02}/10'
+        self.volume_btn.active.widget.text = vol_txt
+        self.volume_btn.inactive.widget.text = vol_txt
+        super().render_gamestate(renderer, delta_time)
+    
+    def toggle_mute(self) ->None:
+        if assets.Sounds.instance.volume < .1:
+            assets.Sounds.instance.set_volume(1)
+        else:
+            assets.Sounds.instance.set_volume(0)
+    
+    def update_gamestate(self, delta_time):
+        if self.holder.selection == 0: # Volume
+            if self.inputstate.keys[pg.K_LEFT][inputs.KeyState.DOWN]:
+                assets.Sounds.instance.adjust_vol(False)
+            elif self.inputstate.keys[pg.K_RIGHT][inputs.KeyState.DOWN]:
+                assets.Sounds.instance.adjust_vol(True)
+        return super().update_gamestate(delta_time)
+
 _itemslotsubscreens: Dict[item.ItemSlot, 'ItemSlotSubscreen']
 _itemusescreen: ItemUseConfirmation
 _usetossscreen: UseTossScreen
+_bindscreen: BindScreen
+_settingsscreen: SettingsScreen

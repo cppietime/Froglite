@@ -211,7 +211,7 @@ def group(size: Pos,
     Returns a list of sets of the positions of all tiles in each group
     """
     # Initialize groups
-    counts: List[Set[Pos]] = [] # Number of points in each group
+    counts: List[Set[Pos]] = [] # Points in each group
     group_ids: List[int] = [] # Group peresnt at each point
     for xy, p in enumerate(passable):
         if not p:

@@ -14,7 +14,7 @@ def white(size: Pos,
           weights: Sequence[float]) -> IArray:
     weights_arr = np.asanyarray(weights, dtype=float)
     weights_arr /= weights_arr.sum()
-    return np.random.choice(tiles, size=size, p=weights_arr)
+    return np.random.choice(tiles, size=size[::-1], p=weights_arr)
 
 def _perlin_gradient(x: float, y: float) -> float:
     x0, y0 = int(x), int(y)

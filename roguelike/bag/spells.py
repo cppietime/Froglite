@@ -18,7 +18,10 @@ from roguelike.bag import item
 from roguelike.entities import player
 
 if TYPE_CHECKING:
-    from roguelike.entities.entity import FightingEntity
+    from roguelike.entities.entity import (
+        ActingEntity,
+        FightingEntity
+    )
     from roguelike.engine.gamestate import GameState
     from roguelike.world.dungeon import DungeonMapState
 
@@ -28,12 +31,7 @@ class ProjectileSpell(item.SpellItem):
     animation_name: str
     attack_pow: float
     
-    # on_use = None
-    
-    tile_speed: ClassVar[float] = .2
-    
-    # def __post_init__(self):
-        # self.on_use = self.fire_bullet
+    tile_speed: ClassVar[float] = .1
     
     def on_use(self, state: 'GameState', user: 'FightingEntity') -> None:
         assert user.anim is not None
@@ -90,18 +88,38 @@ class ProjectileSpell(item.SpellItem):
                 yield False
             dms.queue_event(event_manager.Event(_event))
 
+@dataclass(frozen=True, eq=True)
+class FreezeSpell(item.SpellItem):
+    stall: float
+    
+    def on_use(self, state: 'GameState', user: 'FightingEntity') -> None:
+        dms = cast('DungeonMapState', state)
+        for ent in dms.dungeon_map.entities.values():
+            if not ent.actionable:
+                continue
+            actor = cast('ActingEntity', ent)
+            actor.energy = -self.stall
+        assets.Sounds.instance.pew.play()
+
 items: Dict[str, item.SpellItem] = {}
 
 def init_items():
-    source = assets.residuals['spells']
+    source = assets.residuals.pop('spells')
     for name, value in source.items():
-        reach = value.get('reach', 4)
-        anim_name = value['animation']
-        attack = value['attack']
         icon = assets.Sprites.instance.sprites[value['icon']]
         description = value['description']
         display = value.get('display', name.title())
         cost = value.get('cost', 2)
-        spell = ProjectileSpell(name, icon, description, display, cost, reach=reach, animation_name=anim_name, attack_pow=attack)
+        kind = value['kind']
+        if kind == 'projectile':
+            reach = value.get('reach', 4)
+            anim_name = value['animation']
+            attack = value['attack']
+            spell = ProjectileSpell(name, icon, description, display, cost, reach=reach, animation_name=anim_name, attack_pow=attack)
+        elif kind == 'freeze':
+            stall = value.get('stall', 1)
+            spell = FreezeSpell(name, icon, description, display, cost, stall)
+        else:
+            raise ValueError(f'{kind} is not a valid spell type')
         items[name] = spell
     item.items.update(items)

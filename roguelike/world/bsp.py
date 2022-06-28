@@ -43,7 +43,6 @@ def bsp(size: Pos,
             set_j = groups[j]
             box_i = random.choice(list(set_i))
             box_j = random.choice(list(set_j))
-            logging.debug(f'Tunneling from {box_i} to {box_j}')
             tunnel(array, box_i, box_j, inside, outside, border)
             set_i.update(set_j)
             groups.pop(j)
@@ -88,6 +87,7 @@ def tunnel(array: IArray,
            inside: int,
            outside: int,
            border: int) -> None:
+    logging.debug(f'Tunneling from {from_} to {to}')
     x_first = random.randint(0, 1) == 0
     x = from_[0]
     if x_first:
@@ -101,7 +101,7 @@ def tunnel(array: IArray,
             if from_[1] + 1 < array.shape[0]\
                     and array[from_[1] + 1, x] == outside:
                 array[from_[1] + 1, x] = border
-        x = from_[1]
+        x = to[0]
     y0 = min(from_[1], to[1])
     y1 = max(from_[1], to[1])
     for y in range(y0, y1 + 1):

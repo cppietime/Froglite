@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 import math
 from typing import (
+    cast,
     Dict,
     List,
     Optional,
@@ -49,6 +50,12 @@ class Animation:
                    size: Tuple[int, int],
                    offsets: Sequence[Tuple[int, int]]) -> List[Sprite]:
         return list(map(lambda offset: Sprite(atlas, offset, size), offsets))
+    
+    @staticmethod
+    def singular(sprites: Sequence[Sprite], speed: float = 1) -> 'Animation':
+        spr_dl = {AnimState.DEFAULT: {AnimDir.DEFAULT: list(sprites)}}
+        spr_d = cast(Dict[AnimState, Dict[AnimDir, Sequence[Sprite]]], spr_dl)
+        return Animation(spr_d, speed)
     
 @dataclass
 class AnimationState:

@@ -81,7 +81,7 @@ uniform sampler2D tex;
 void main() {
     vec4 in_color = texture(tex, out_uv);
     /* I will probably want to change this to a better luminocity formula */
-    float lum = in_color.x * .299 + in_color.y * .587 + in_color.z * .114;
+    float lum = in_color.x * .333 + in_color.y * .333 + in_color.z * .333;
     bloomColor = (lum >= threshold) ? vec4(in_color) : vec4(0);
 }
 """, varyings = ('out_uv',))
@@ -142,10 +142,11 @@ layout (location=0) out vec4 sumColor;
 
 uniform sampler2D tex;
 uniform sampler2D addition;
+uniform float factor;
 
 void main() {
     vec3 baseColor = texture(tex, out_uv).rgb;
-    vec3 addColor = texture(addition, out_uv).rgb + baseColor;
+    vec3 addColor = texture(addition, out_uv).rgb * factor + baseColor;
     //addColor = vec3(1) - exp(-addColor * 1.5);
     //addColor = pow(addColor, vec3(1.0 / 2.2));
     // I think I will move HDR + gamma into a separate shader

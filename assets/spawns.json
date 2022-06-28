@@ -1,15 +1,31 @@
 {
+    "null": {
+        "weight": 1
+    },
     "med_chaser": {
         "class": "Pursuant",
-        "animation": "slow_chaser",
+        "animation": "silver",
         "max_hp": 25,
         "action_cost": 1.5,
         "attack": 12,
         "defense": 1.5,
-        "gold": 5,
-        "atk_mul": 0.25,
-        "def_mul": 0.1,
-        "drops": []
+        "gold": 6,
+        "atk_mul": 5,
+        "def_mul": 0.12,
+        "drops": [
+        {
+            "name": "drop_potion",
+            "weight": 2
+        },
+        {
+            "name": "null",
+            "weight": 6
+        },
+        {
+            "name": "drop_bandage",
+            "weight": 1
+        }
+        ]
     },
     "slow_chaser": {
         "class": "Pursuant",
@@ -19,16 +35,351 @@
         "attack": 10,
         "defense": 1,
         "gold": 3,
-        "atk_mul": 0.25,
+        "atk_mul": 5,
         "def_mul": 0.1,
-        "drops": []
+        "drops": [
+        {
+            "name": "drop_dew",
+            "weight": 1
+        },
+        {
+            "name": "null",
+            "weight": 4
+        }
+        ]
     },
-    "null": {
-        "weight": 1
+    "fast_chaser": {
+        "class": "Pursuant",
+        "animation": "gold",
+        "max_hp": 10,
+        "action_cost": 1,
+        "attack": 5,
+        "defense": 1,
+        "gold": 10,
+        "atk_mul": 1,
+        "def_mul": 0.1
+    },
+    "hulk": {
+        "class": "Pursuant",
+        "animation": "hulk",
+        "action_cost": 2.2,
+        "max_hp": 35,
+        "attack": 15,
+        "defense": 1,
+        "atk_mul": 15,
+        "def_mul": 0.1,
+        "gold": 25,
+        "drops": [
+        {
+            "name": "drop_wand",
+            "weight": 1
+        },
+        {
+            "name": "null",
+            "weight": 2
+        }
+        ]
+    },
+    "bug": {
+        "class": "Pursuant",
+        "animation": "bug",
+        "action_cost": 0.5,
+        "max_hp": 12,
+        "attack": 3,
+        "defense": 1,
+        "atk_mul": 0.18,
+        "def_mul": 0.04,
+        "gold": 20,
+        "drops": [
+        {
+            "name": "drop_bug_wings",
+            "weight": 3
+        },
+        {
+            "name": "drop_potion",
+            "weight": 6
+        },
+        {
+            "name": "null",
+            "weight": 8
+        },
+        {
+            "name": "drop_bandage",
+            "weight": 2
+        }
+        ]
+    },
+    "demon": {
+        "class": "Pursuant",
+        "animation": "demon",
+        "action_cost": 1,
+        "max_hp": 25,
+        "attack": 10,
+        "defense": 1,
+        "atk_mul": 7,
+        "def_mul": 0.02,
+        "gold": 66,
+        "drops": [
+        {
+            "name": "drop_potion",
+            "weight": 4
+        },
+        {
+            "name": "drop_ichor",
+            "weight": 2
+        },
+        {
+            "name": "null",
+            "weight": 6
+        },
+        {
+            "name": "drop_wand",
+            "weight": 1
+        },
+        {
+            "name": "drop_bandage",
+            "weight": 1
+        }
+        ]
+    },
+    "adipocyte": {
+        "class": "Pursuant",
+        "animation": "fat",
+        "action_cost": 1e9,
+        "max_hp": 100,
+        "attack": 1,
+        "defense": 1,
+        "atk_mul": 0,
+        "def_mul": 0,
+        "gold": 100,
+        "drops": [
+        {
+            "name": "drop_ichor",
+            "weight": 1
+        },
+        {
+            "name": "drop_elixir",
+            "weight": 1
+        }
+        ]
+    },
+    "t_cell": {
+        "class": "Pursuant",
+        "animation": "t_cell",
+        "action_cost": 1,
+        "max_hp": 44,
+        "attack": 35,
+        "defense": 2,
+        "atk_mul": 2,
+        "def_mul": 0,
+        "gold": 40,
+        "drops": [
+        {
+            "name": "null",
+            "weight": 3
+        },
+        {
+            "name": "drop_ichor",
+            "weight": 200
+        },
+        {
+            "name": "drop_cyst",
+            "weight": 1
+        }
+        ]
+    },
+    "platelet": {
+        "class": "Pursuant",
+        "animation": "platelet",
+        "action_cost": 0.5,
+        "max_hp": 15,
+        "attack": 6,
+        "defense": 1,
+        "atk_mul": 0.25,
+        "def_mul": 0.04,
+        "gold": 40,
+        "drops": [
+        {
+            "name": "null",
+            "weight": 1
+        },
+        {
+            "name": "drop_potion",
+            "weight": 1
+        }
+        ]
+    },
+    "embryo": {
+        "class": "Pursuant",
+        "animation": "embryo",
+        "action_cost": 1,
+        "max_hp": 36,
+        "attack": 10,
+        "defense": 2,
+        "gold": 14,
+        "drops": [
+        {
+            "name": "null",
+            "weight": 1
+        },
+        {
+            "name": "amnion",
+            "weight": 1
+        },
+        {
+            "name": "heart",
+            "weight": 1
+        }
+        ]
+    },
+    "drop_dew": {
+        "class": "ItemEntity",
+        "item": "dew",
+        "count": 1
+    },
+    "drop_potion": {
+        "class": "ItemEntity",
+        "item": "potion",
+        "count": 1
+    },
+    "drop_ichor": {
+        "class": "ItemEntity",
+        "item": "ichor",
+        "count": 1
+    },
+    "drop_bug_wings": {
+        "class": "ItemEntity",
+        "item": "bug_wings",
+        "count": 1
+    },
+    "drop_knife": {
+        "class": "ItemEntity",
+        "item": "knife",
+        "count": 1
+    },
+    "drop_machette": {
+        "class": "ItemEntity",
+        "item": "machette",
+        "count": 1
+    },
+    "drop_club": {
+        "class": "ItemEntity",
+        "item": "club",
+        "count": 1
+    },
+    "drop_cleaver": {
+        "class": "ItemEntity",
+        "item": "cleaver",
+        "count": 1
+    },
+    "drop_bandage": {
+        "class": "ItemEntity",
+        "item": "bandage",
+        "count": 1
+    },
+    "drop_wand": {
+        "class": "ItemEntity",
+        "item": "wand",
+        "count": 1
+    },
+    "drop_ether": {
+        "class": "ItemEntity",
+        "item": "ether",
+        "count": 1
+    },
+    "drop_elixir": {
+        "class": "ItemEntity",
+        "item": "elixir",
+        "count": 1
+    },
+    "drop_staff": {
+        "class": "ItemEntity",
+        "item": "staff",
+        "count": 1
+    },
+    "drop_cyst": {
+        "class": "ItemEntity",
+        "item": "cyst",
+        "count": 1
+    },
+    "warp_tunnels": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "warp_tunnels_open"
+    },
+    "warp_cavern": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "warp_cavern_open"
+    },
+    "warp_hell": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "warp_hell_open"
     },
     "buy_fireball": {
         "class": "NPCEntity",
         "animation": "fireball",
-        "chat": "buy_fireball"
+        "chat": "buy_fireball_open"
+    },
+    "buy_freeze": {
+        "class": "NPCEntity",
+        "animation": "fireball",
+        "chat": "buy_freeze_open"
+    },
+    "item_shop": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "shop_open"
+    },
+    "hell_item_shop": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "hell_shop_open"
+    },
+    "npc_welcome": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_welcome"
+    },
+    "npc_infested": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_infested"
+    },
+    "npc_finite": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_finite"
+    },
+    "npc_exit": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_exit"
+    },
+    "npc_dont_listen": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_dont_listen"
+    },
+    "npc_no_home": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_no_home"
+    },
+    "npc_came_here": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_came_here"
+    },
+    "npc_empty": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_empty"
+    },
+    "npc_flesh": {
+        "class": "NPCEntity",
+        "animation": "player",
+        "chat": "npc_flesh"
     }
 }

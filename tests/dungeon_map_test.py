@@ -18,7 +18,6 @@ from roguelike.engine import (
 )
 from roguelike.states import (
     ui,
-    game_over
 )
 from roguelike.entities import (
     entity,
@@ -29,6 +28,8 @@ from roguelike.entities import (
     spawn
 )
 from roguelike.bag import (
+    armor,
+    charms,
     consumables,
     inventory_state,
     keys,
@@ -39,7 +40,8 @@ from roguelike.world import (
     dungeon,
     wfc,
     world_gen,
-    world_select
+    world_select,
+    game_over
 )
 map_size = (20, 20)
 pat_size = (4, 4)
@@ -72,7 +74,7 @@ entity.Entity.base_size = tile_size
 # Initialize assets
 dungeon.DungeonMapState.init_sprites(rend)
 entity.EnemyEntity.hp_font = dungeon.DungeonMapState.font
-ui.default_font = rend.get_font('Consolas', 64, antialiasing=False, bold=False)
+ui.default_font = rend.get_font('Consolas', 64, antialiasing=False, bold=True)
 inventory_state.InventoryBaseScreen.init_globs()
 world_select.WorldSelect.init_globs()
 game_over.GameOverState.init_resources()
@@ -82,6 +84,8 @@ consumables.init_items()
 keys.init_items()
 spells.init_items()
 weapons.init_items()
+armor.init_items()
+charms.init_items()
 npc.init_chats()
 world_gen.init_generators()
 spawn.init()
@@ -127,7 +131,7 @@ while assets.running:
     for event in pg.event.get():
         if event.type == pg.QUIT or event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
             assets.running=False
-        elif event.type == pg.KEYDOWN and event.key in (pg.K_u, pg.K_i, pg.K_o, pg.K_p, pg.K_y, pg.K_z, pg.K_x):
+        elif event.type == pg.KEYDOWN and event.key in (pg.K_u, pg.K_i, pg.K_o, pg.K_p, pg.K_y, pg.K_z, pg.K_x, pg.K_LALT):
             if event.key == pg.K_u:
                 gamma -= .1
             elif event.key == pg.K_i:
@@ -140,6 +144,8 @@ while assets.running:
                 assets.Sounds.instance.adjust_vol(False)
             elif event.key == pg.K_x:
                 assets.Sounds.instance.adjust_vol(True)
+            elif event.key == pg.K_LALT:
+                assets.variables['difficulty'] += 1
             else:
                 render_mode = not render_mode
             print(f'{gamma=}, {exposure=}')
@@ -160,7 +166,7 @@ while assets.running:
     manager.render(delta_time, rend)
     
     if render_mode:
-        rend.apply_bloom(2, 1, threshold=.9)
+        rend.apply_bloom(5, 1, threshold=.65, strength=.3)
         rend.apply_exposure(base_fbo, gamma=gamma, exposure=exposure)
         rend.pop_fbo()
     

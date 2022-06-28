@@ -10,7 +10,7 @@ from roguelike.bag import item
 items: Dict[str, item.WeaponItem] = {}
 
 def init_items() -> None:
-    weapons: Dict[str, Dict[str, Any]] = assets.residuals['weapons']
+    weapons: Dict[str, Dict[str, Any]] = assets.residuals.pop('weapons')
     for name, value in weapons.items():
         description = cast(str, value['description'])
         icon_key = cast(str, value['icon'])

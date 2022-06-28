@@ -7,13 +7,14 @@ from typing import (
 from roguelike import settings
 from roguelike.engine import (
     assets,
-    text
+    text,
+    tween
 )
 from roguelike.states import (
-    game_over,
     ui
 )
 from roguelike.world import (
+    game_over,
     dungeon,
     world_gen
 )
@@ -36,6 +37,9 @@ class WorldSelect(ui.PoppableMenu):
     
     def __init__(self):
         super().__init__()
+        self.callbacks_on_push.append(
+            lambda _: assets.Sounds.instance.stop_music())
+        
         self.widget.reset_scr = [0, 0, 0, 1]
         self.mainholder = self.widget.widget
         self.mainholder.spacing = 1440 / 3
@@ -57,17 +61,25 @@ class WorldSelect(ui.PoppableMenu):
         
         self.holder = ui.WidgetHolder(
             spacing=self.button_h + self.button_padding)
+        metaholder = ui.MetaWidget(self.holder,
+                                   bounding_rect=tween.AnimatableMixin(
+                                       x=0, y=0, w=self.button_w,
+                                       h=1080-self.button_h))
         self.sideholder.widgets.append(ui.Label(
             text="Select world",
             text_rect=[-self.header_hang, 0,
                        self.button_w + self.header_hang * 2, self.button_h],
             font=self.font,
             alignment=text.CENTER_CENTER))
-        self.sideholder.widgets.append(self.holder)
+        self.sideholder.widgets.append(metaholder)
         
-        self.world_keys = list(assets.persists['unlocked'].keys())
-        numb = len(self.world_keys)
-        for key, value in assets.persists['unlocked'].items():
+        unlocked_worlds = assets.persists['unlocked']
+        if assets.DEBUG:
+            unlocked_worlds = {name: True
+                for name in world_gen.world_generators}
+        self.world_keys = list(unlocked_worlds.keys())
+        numb = len(unlocked_worlds)
+        for key, value in unlocked_worlds.items():
             if not value:
                 continue
             wgen = world_gen.world_generators[key]
@@ -87,9 +99,9 @@ class WorldSelect(ui.PoppableMenu):
             active_bg_sprite=self.active_button_bg,
             inactive_bg_sprite=self.inactive_button_bg,
             active_text_color=[1, 0, 0, 1]))
-        self.holder.buffer_display = 0 if numb <= self.scroll_threshold\
+        self.holder.buffer_display = 0 if numb < self.scroll_threshold\
             else 1
-        self.holder.scroll = numb > self.scroll_threshold
+        self.holder.scroll = numb >= self.scroll_threshold
     
     def button_chose(self, name: str) -> None:
         logging.debug(f'Chosen {name}')

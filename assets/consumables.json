@@ -1,16 +1,44 @@
 {
-    "Potion": {
+    "dew": {
+        "display": "Coffee",
+        "description": "Heals 5 HP",
+        "icon": "potion",
+        "kind": "heal",
+        "amount": 5,
+        "message": "You are healed {} HP!"
+    },
+    "potion": {
+        "display": "Inhalant",
         "description": "Heals 20 HP",
         "icon": "potion",
         "kind": "heal",
         "amount": 20,
         "message": "You are healed {} HP!"
     },
-    "Ichor": {
+    "ichor": {
+        "display": "Cortisol",
         "description": "Heals 50 HP",
         "icon": "potion",
         "kind": "heal",
         "amount": 50,
         "message": "You are healed {} HP!"
+    },
+    "ether": {
+        "display": "Ether",
+        "description": "Restores 10 MP",
+        "icon": "potion",
+        "kind": "heal",
+        "type": "MP",
+        "amount": 10,
+        "message": "Your MP increased {}!"
+    },
+    "elixir": {
+        "display": "Elixir",
+        "description": "Restores 50 MP",
+        "icon": "potion",
+        "kind": "heal",
+        "type": "MP",
+        "amount": 50,
+        "message": "Your MP increased {}!"
     }
 }

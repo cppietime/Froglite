@@ -2,5 +2,10 @@
     "Key": {
         "description": "A key to open doors",
         "icon": "key"
+    },
+    "bug_wings": {
+        "display": "Bug Wings",
+        "icon": "bug_wings",
+        "description": "Small body parts that fell off a dead bug"
     }
 }

@@ -23,7 +23,7 @@ from roguelike.bag import (
     item,
     spells
 )
-from roguelike.states import game_over
+from roguelike.world import game_over
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
@@ -44,7 +44,7 @@ class PlayerEntity(entity.FightingEntity):
                          attack=10,
                          defense=1,
                          **kwargs)
-        self.max_mp = 20
+        self.max_mp = 50
         self.mp = self.max_mp
         self.anim.speed = 0
         self.anim.direction = sprite.AnimDir.DOWN
@@ -55,12 +55,13 @@ class PlayerEntity(entity.FightingEntity):
         if 'coins' not in assets.variables:
             assets.variables['coins'] = 0
         
-        for name, spell in spells.items.items():
-            if assets.persists.get(name, False) and self.inventory[spell] == 0:
-                self.inventory.give_item(spell, 1)
+        if assets.DEBUG:
+            assets.variables['coins'] = 9999
         
-        # DEBUGGING
-        # self.inventory.give_item(item.items['Fireball'], 1)
+        for name, spell in spells.items.items():
+            if (assets.persists.get(name, False) or assets.DEBUG)\
+                    and self.inventory[spell] == 0:
+                self.inventory.give_item(spell, 1)
     
     walk_length: ClassVar[float] = .25
     
@@ -173,13 +174,29 @@ class PlayerEntity(entity.FightingEntity):
                 yield False
             state.queue_event(event_manager.Event(_menu))
             return
-        if state.inputstate.keys[pg.K_LCTRL][inputs.KeyState.DOWN]\
-                or state.inputstate.keys[pg.K_RCTRL][inputs.KeyState.DOWN]:
-            # Use magic
-            spell_item = self.inventory[item.EquipmentSlot.SPELL]
-            if spell_item is not None and self.mp >= spell_item.mana_cost:
-                spell_item.on_use(state, self)
-                self.mp -= spell_item.mana_cost
+        # if state.inputstate.keys[pg.K_LCTRL][inputs.KeyState.DOWN]\
+                # or state.inputstate.keys[pg.K_RCTRL][inputs.KeyState.DOWN]:
+            # # Use magic
+            # spell_item = self.inventory[item.EquipmentSlot.SPELL]
+            # if spell_item is not None and self.mp >= spell_item.mana_cost:
+                # spell_item.on_use(state, self)
+                # self.mp -= spell_item.mana_cost
+        numkey = state.inputstate.test_num_key(inputs.KeyState.DOWN)
+        if numkey > 0:
+            bound_item = self.inventory[numkey - 1]
+            if bound_item is not None:
+                if bound_item.castable:
+                    spell = cast(item.SpellItem, bound_item)
+                    if self.mp >= spell.mana_cost:
+                        spell.on_use(state, self)
+                        self.mp -= spell.mana_cost
+                        return
+                elif bound_item.usable:
+                    count = self.inventory[bound_item]
+                    if count > 0:
+                        self.inventory.take_item(bound_item, 1)
+                        bound_item.on_use(state, None, self)
+                        return
     
     def render_entity(self, delta_time, renderer, base_offset):
         super().render_entity(delta_time, renderer, base_offset)
@@ -331,7 +348,7 @@ class PlayerEntity(entity.FightingEntity):
         pow_mul = 1
         if charm is not None:
             pow_mul = charm.pow_mul
-        return max(1, int(round(super().effective_magic() * pow_mul)))
+        return max(1, (super().effective_magic() * pow_mul))
     
     def regain_mp(self):
         charm = self.inventory[item.EquipmentSlot.CHARM]

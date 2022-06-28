@@ -54,6 +54,11 @@ def bounce(bounces: float, power: float = 1) -> Callable[[float], float]:
         return 1 - abs(math.cos(x * math.pi * bounces)) ** power
     return _fn
 
+def parabola(peak: float) -> Callable[[float], float]:
+    def _fn(x: float) -> float:
+        return 1 - (x / peak - 1) ** 2
+    return _fn
+
 @dataclass
 class Tween:
     """A single tween action that acts on a single property of a single

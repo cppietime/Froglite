@@ -25,7 +25,7 @@ class ItemEntity(entity.Entity):
                  current_state: 'GameState',
                  player: 'PlayerEntity') -> None:
         self.pain_particle(current_state,
-            f'Got {self.item.name} x{self.count}!', (1, 1, 1, 1))
+            f'Got {self.item.display} x{self.count}!', (1, 1, 1, 1))
         player.inventory.give_item(self.item, self.count)
         assets.Sounds.instance.budu.play()
         self.entity_die(current_state, None)
@@ -41,7 +41,7 @@ class KeyEntity(ItemEntity):
         player.inventory.give_item(self.item, self.count)
         has = player.inventory[self.item]
         self.pain_particle(current_state,
-            f'{self.item.name} {has}/{self.needed}', (1, 1, 0, 1))
+            f'{self.item.display} {has}/{self.needed}', (1, 1, 0, 1))
         assets.Sounds.instance.budu.play()
         self.entity_die(current_state, None)
 

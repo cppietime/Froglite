@@ -38,6 +38,7 @@ from roguelike.entities import (
     entity,
     player
 )
+from roguelike.world import particle
 from roguelike.bag import consumables
 
 Pos = Tuple[int, int]
@@ -78,35 +79,6 @@ def init_tiles() -> None:
         tiles[name] = tile
 
 @dataclass
-class DungeonParticle:
-    rect: tween.AnimatableMixin
-    motion: tween.Animation
-    animstate: Optional[sprite.AnimationState] = None
-    msg: Optional[str] = None
-    text_color: Tuple[float, float, float, float] = (0, 0, 0, 0)
-    font: Optional[text.CharBank] = None
-    
-    def render_particle(self,
-                        delta_time: float,
-                        renderer: 'Renderer',
-                        offset: Tuple[float, float]) -> bool:
-        active = self.motion.update(delta_time)
-        pos = (self.rect.x + offset[0], self.rect.y + offset[1])
-        if self.animstate is not None:
-            self.animstate.render(renderer,
-                                  pos,
-                                  (self.rect.w, self.rect.h))
-            self.animstate.increment(delta_time)
-        if self.msg:
-            assert self.font is not None
-            self.font.draw_str_in(self.msg,
-                                  pos,
-                                  (self.rect.w, self.rect.h),
-                                  self.text_color,
-                                  alignment=text.CENTER_CENTER)
-        return active
-
-@dataclass
 class DungeonMapSpawner:
     """Base from which to generate dungeon maps"""
     size: Tuple[int, int]
@@ -118,8 +90,11 @@ class DungeonMapSpawner:
         field(default_factory=list)
     border: int = -1
     
-    def spawn_map(self, old_player: player.PlayerEntity=None):
-        dungeon_map = DungeonMap(self.size, self.tiles, self.vignette_color, self.border)
+    def spawn_map(self, old_player: 'player.PlayerEntity'=None):
+        dungeon_map = DungeonMap(self.size,
+                                 self.tiles,
+                                 self.vignette_color,
+                                 self.border)
         dungeon_map.tile_map = list(self.tile_map)
         for pos, ent_cls, kwargs in self.spawns:
             ent = ent_cls(dungeon_pos=list(pos), **dict(kwargs))
@@ -256,12 +231,15 @@ class DungeonMapState(gamestate.GameState):
         self.starting_size = kwargs.pop('base_size')
         super().__init__(*args, **kwargs)
         self.camera = tween.AnimatableMixin()
-        self.particles: List[DungeonParticle] = []
+        self.particles: List[particle.DungeonParticle] = []
         self.vignette_sprite = assets.Sprites.instance.vignette
         self.blackout = 0.
         self.respawn()
     
-    def generate_from(self, gen: 'WorldGenerator', size: Tuple[int, int], **kwargs) -> None:
+    def generate_from(self,
+                      gen: 'WorldGenerator',
+                      size: Tuple[int, int],
+                      **kwargs) -> None:
         spawner = gen.generate_world(size, **kwargs)
         self.load_spawner(spawner)
     
@@ -355,8 +333,9 @@ class DungeonMapState(gamestate.GameState):
                                     renderer.screen_size[1]),
                                    positioning=('center', 'center'))
             stack_fbo.use()
-            renderer.apply_vignette(oldest_fbo,
-                                    renderer.fbos['accum0'].color_attachments[0])
+            renderer.apply_vignette(
+                oldest_fbo,
+                renderer.fbos['accum0'].color_attachments[0])
             renderer.pop_fbo()
             
             # Increment tile animations
@@ -380,7 +359,9 @@ class DungeonMapState(gamestate.GameState):
                         or ent.rect.x + ent.rect.w >= 0)\
                         and (ent.rect.y < renderer.screen_size[1]
                         or ent.rect.y + ent.rect.h >= 0):
-                    ent.render_entity_post(delta_time, renderer, (-adj_x, -adj_y))
+                    ent.render_entity_post(delta_time,
+                                           renderer,
+                                           (-adj_x, -adj_y))
 
             # Vignette on visibility of mobs
             renderer.fbos['accum0'].use()
@@ -391,8 +372,9 @@ class DungeonMapState(gamestate.GameState):
                                     renderer.screen_size[1]),
                                    positioning=('center', 'center'))
             stack_fbo.use()
-            renderer.apply_vignette(oldest_fbo,
-                                    renderer.fbos['accum0'].color_attachments[0])
+            renderer.apply_vignette(
+                oldest_fbo,
+                renderer.fbos['accum0'].color_attachments[0])
             renderer.pop_fbo()
             oldest_fbo.use()
             
@@ -431,6 +413,21 @@ class DungeonMapState(gamestate.GameState):
                                   (self.tile_size * 5, self.tile_size),
                                   (0, .5, 1, 1),
                                   (self.base_text_scale,) * 2)
+            # Hotbar
+            inv = self.dungeon_map.player.inventory
+            icon_size = self.tile_size // 2
+            start_x = 1440 / 2 - self.tile_size * 9 / 2
+            for i, itm in enumerate(inv.bound):
+                if itm is None:
+                    continue
+                x = start_x + self.tile_size * i
+                self.font.draw_str_in(f'{i+1}:',
+                                      (x, 1080 - icon_size * 2),
+                                      (icon_size,) * 2,
+                                      (1, 1, 1, 1),
+                                      None)
+                icon = itm.icon
+                renderer.render_sprite(icon, (x, 1080 - icon_size), (icon_size,) * 2)
             
             # Tutorial
             t_state = assets.persists.get('tutorial', 0)
@@ -444,16 +441,16 @@ class DungeonMapState(gamestate.GameState):
             elif t_state == 3:
                 t_str = 'ENTER to attack/interact.\nHit the dummy'
             elif t_state == 4:
-                t_str = 'CTRL to cast equipped spell'
+                t_str = 'Bind spells and items to keys 1-9'
             elif t_state == 5:
                 t_str = 'Move to the portal'
             if t_str is not None:
                 self.font.draw_str_in(t_str,
                                    (0, 1080 - self.tile_size * 2),
                                    (1440, self.tile_size * 2),
-                                   (1, 1, 1, 1),
+                                   (1, .7, 1, 1),
                                    (self.base_text_scale,) * 2,
-                                   alignment=text.CENTER_TOP)
+                                   alignment=text.CENTER_BOTTOM)
         
         # Blackout effect
         if self.blackout > 0:
@@ -509,9 +506,9 @@ class DungeonMapState(gamestate.GameState):
                        **kwargs) -> None:
         animstate = None if animation is None\
             else sprite.AnimationState(animation, **kwargs)
-        particle = DungeonParticle(
+        ptcl = particle.DungeonParticle(
             rect, motion, animstate, msg, text_color, self.font)
-        self.particles.append(particle)
+        self.particles.append(ptcl)
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:

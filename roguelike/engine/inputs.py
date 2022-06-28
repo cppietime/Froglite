@@ -21,6 +21,19 @@ MOUSEFOCUS = 0
 INPUTFOCUS = 1
 APPACTIVE = 2
 
+num_keys = (
+    (pg.K_0, pg.K_KP0),
+    (pg.K_1, pg.K_KP1),
+    (pg.K_2, pg.K_KP2),
+    (pg.K_3, pg.K_KP3),
+    (pg.K_4, pg.K_KP4),
+    (pg.K_5, pg.K_KP5),
+    (pg.K_6, pg.K_KP6),
+    (pg.K_7, pg.K_KP7),
+    (pg.K_8, pg.K_KP8),
+    (pg.K_9, pg.K_KP9),
+)
+
 @dataclass
 class InputState:
     keys: Dict[int, Dict[KeyState, bool]] = field(default_factory=lambda:\
@@ -70,3 +83,9 @@ class InputState:
     def record_mouse(self) -> None:
         self.mouse_pos = pg.mouse.get_pos()
         self.mouse_delta = pg.mouse.get_rel()
+    
+    def test_num_key(self, state: KeyState) -> int:
+        for i, keys in enumerate(num_keys):
+            if any(map(lambda key: self.keys[key][state], keys)):
+                return i
+        return -1

@@ -1,10 +1,20 @@
 {
-    "Fireball": {
-        "display": "Peepeepoopoo",
+    "fireball": {
+        "kind": "projectile",
+        "display": "Fireball",
         "animation": "fireball",
         "reach": 4,
         "attack": 10,
+        "cost": 3,
         "icon": "fireball",
-        "description": "Fireball spell\nReach: 4 straight\nPower: 10"
+        "description": "Fireball spell\nReach: 4 straight\nPower: 10\nMP: 2"
+    },
+    "freeze": {
+        "kind": "freeze",
+        "display": "Freeze",
+        "icon": "fireball",
+        "description": "Temporarily stalls enemies\nMP: 15",
+        "cost": 15,
+        "stall": 3
     }
 }
