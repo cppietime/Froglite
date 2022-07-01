@@ -547,6 +547,16 @@ class EnemyEntity(ActingEntity):
         pos = (self.rect.x + base_offset[0],
             self.rect.y + base_offset[1] - self.rect.h * self.hp_bar_y)
         self.hp_font.draw_str_in(f"{self.hp}",
+                                        (pos[0]+2, pos[1]+2),
+                                        (self.rect.w,
+                                         self.rect.h * self.hp_bar_h),
+                                        (0, 0, 0, 1))
+        self.hp_font.draw_str_in(f"{self.hp}",
+                                        (pos[0]-2, pos[1]-2),
+                                        (self.rect.w,
+                                         self.rect.h * self.hp_bar_h),
+                                        (1, 1, 1, 1))
+        self.hp_font.draw_str_in(f"{self.hp}",
                                         pos,
                                         (self.rect.w,
                                          self.rect.h * self.hp_bar_h),

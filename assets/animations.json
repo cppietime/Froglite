@@ -1,4 +1,12 @@
 {
+    "ladder": {
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["ladder"]
+            }
+        },
+        "speed": 1
+    },
     "slow_chaser": {
         "animation": {
             "DEFAULT": {
@@ -35,18 +43,63 @@
                 "DEFAULT": [
                     "player-0", "player-1", "player-2", "player-3"
                 ],
-                "DOWN": [
-                    "player-0", "player-1", "player-2", "player-3"
-                ],
-                "UP": [
-                    "player-4", "player-5", "player-6", "player-7"
-                ],
                 "LEFT": [
-                    "player-8", "player-9", "player-10", "player-11"
+                    "player-4", "player-5"
                 ],
                 "RIGHT": [
-                    "player-12", "player-13", "player-14", "player-15"
+                    "player-6", "player-7"
+                ],
+                "UP": [
+                    "player-8", "player-9", "player-10", "player-11"
                 ]
+            },
+            "ATTACK": {
+                "DEFAULT": ["player-12"],
+                "LEFT": ["player-13"],
+                "RIGHT": ["player-14"],
+                "UP": ["player-15"]
+            },
+            "DIE": {
+                "DEFAULT": ["player-16"]
+            },
+            "HURT": {
+                "DEFAULT": ["player-17"],
+                "LEFT": ["player-18"],
+                "RIGHT": ["player-19"],
+                "UP": ["player-20"]
+            }
+        }
+    },
+    "npc": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["npc-0"],
+                "LEFT": ["npc-1"],
+                "RIGHT": ["npc-2"],
+                "UP": ["npc-3"]
+            }
+        }
+    },
+    "wizard": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["wizard-0"],
+                "LEFT": ["wizard-1"],
+                "RIGHT": ["wizard-2"],
+                "UP": ["wizard-3"]
+            }
+        }
+    },
+    "merchant": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["merchant-0"],
+                "LEFT": ["merchant-1"],
+                "RIGHT": ["merchant-2"],
+                "UP": ["merchant-3"]
             }
         }
     },
@@ -233,6 +286,14 @@
         "animation": {
             "DEFAULT": {
                 "DEFAULT": ["fireball"]
+            }
+        }
+    },
+    "freeze": {
+        "speed": 1,
+        "animation": {
+            "DEFAULT": {
+                "DEFAULT": ["freeze"]
             }
         }
     }

@@ -57,7 +57,21 @@
         "defense": 1,
         "gold": 10,
         "atk_mul": 1,
-        "def_mul": 0.1
+        "def_mul": 0.1,
+        "drops": [
+        {
+            "name": "null",
+            "weight": 12
+        },
+        {
+            "name": "drop_potion",
+            "weight": 2
+        },
+        {
+            "name": "drop_knife",
+            "weight": 1
+        }
+        ]
     },
     "hulk": {
         "class": "Pursuant",
@@ -88,12 +102,12 @@
         "attack": 3,
         "defense": 1,
         "atk_mul": 0.18,
-        "def_mul": 0.04,
-        "gold": 20,
+        "def_mul": 0.07,
+        "gold": 12,
         "drops": [
         {
             "name": "drop_bug_wings",
-            "weight": 3
+            "weight": 1
         },
         {
             "name": "drop_potion",
@@ -139,6 +153,13 @@
         {
             "name": "drop_bandage",
             "weight": 1
+        },
+        {
+            "name": "npc_flesh",
+            "weight": 10000,
+            "predicates": [
+            ["difficulty", ">", 15, false]
+            ]
         }
         ]
     },
@@ -151,7 +172,7 @@
         "defense": 1,
         "atk_mul": 0,
         "def_mul": 0,
-        "gold": 100,
+        "gold": 50,
         "drops": [
         {
             "name": "drop_ichor",
@@ -172,7 +193,7 @@
         "defense": 2,
         "atk_mul": 2,
         "def_mul": 0,
-        "gold": 40,
+        "gold": 16,
         "drops": [
         {
             "name": "null",
@@ -180,7 +201,7 @@
         },
         {
             "name": "drop_ichor",
-            "weight": 200
+            "weight": 2
         },
         {
             "name": "drop_cyst",
@@ -196,8 +217,8 @@
         "attack": 6,
         "defense": 1,
         "atk_mul": 0.25,
-        "def_mul": 0.04,
-        "gold": 40,
+        "def_mul": 0.06,
+        "gold": 10,
         "drops": [
         {
             "name": "null",
@@ -214,20 +235,22 @@
         "animation": "embryo",
         "action_cost": 1,
         "max_hp": 36,
-        "attack": 10,
+        "attack": 50,
         "defense": 2,
-        "gold": 14,
+        "atk_mul": 2,
+        "def_mul": 0.5,
+        "gold": 23,
         "drops": [
         {
             "name": "null",
             "weight": 1
         },
         {
-            "name": "amnion",
+            "name": "drop_amnion",
             "weight": 1
         },
         {
-            "name": "heart",
+            "name": "drop_heart",
             "weight": 1
         }
         ]
@@ -302,84 +325,99 @@
         "item": "cyst",
         "count": 1
     },
+    "drop_amnion": {
+        "class": "ItemEntity",
+        "item": "amnion",
+        "count": 1
+    },
+    "drop_heart": {
+        "class": "ItemEntity",
+        "item": "heart",
+        "count": 1
+    },
     "warp_tunnels": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "wizard",
         "chat": "warp_tunnels_open"
     },
     "warp_cavern": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "wizard",
         "chat": "warp_cavern_open"
     },
     "warp_hell": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "wizard",
         "chat": "warp_hell_open"
+    },
+    "warp_flesh": {
+        "class": "NPCEntity",
+        "animation": "wizard",
+        "chat": "warp_flesh_open"
     },
     "buy_fireball": {
         "class": "NPCEntity",
-        "animation": "fireball",
+        "animation": "wizard",
         "chat": "buy_fireball_open"
     },
     "buy_freeze": {
         "class": "NPCEntity",
-        "animation": "fireball",
+        "animation": "wizard",
         "chat": "buy_freeze_open"
     },
     "item_shop": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "merchant",
         "chat": "shop_open"
     },
     "hell_item_shop": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "merchant",
         "chat": "hell_shop_open"
     },
     "npc_welcome": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "wizard",
         "chat": "npc_welcome"
     },
     "npc_infested": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "npc",
         "chat": "npc_infested"
     },
     "npc_finite": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "npc",
         "chat": "npc_finite"
     },
     "npc_exit": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "npc",
         "chat": "npc_exit"
     },
     "npc_dont_listen": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "npc",
         "chat": "npc_dont_listen"
     },
     "npc_no_home": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "npc",
         "chat": "npc_no_home"
     },
     "npc_came_here": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "npc",
         "chat": "npc_came_here"
     },
     "npc_empty": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "npc",
         "chat": "npc_empty"
     },
     "npc_flesh": {
         "class": "NPCEntity",
-        "animation": "player",
+        "animation": "wizard",
         "chat": "npc_flesh"
     }
 }

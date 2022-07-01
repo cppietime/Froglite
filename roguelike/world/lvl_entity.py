@@ -31,7 +31,7 @@ class LadderEntity(entity.Entity):
         self.done_message = False
         
         # Temporary debug
-        self.class_anim = assets.Animations.instance.player
+        self.class_anim = assets.Animations.instance.ladder
         super().__init__(*args, passable=True, **kwargs)
         self.callbacks_on_update.append(LadderEntity.move_callback)
     
@@ -89,7 +89,7 @@ def warp(state: dungeon.DungeonMapState,
         while _state.locked():
             yield True
         if reset:
-            assets.variables['difference'] = 0
+            assets.variables['difficulty'] = 0
         else:
             assets.variables['difficulty'] += 1
         assets.persists['highests'][world_type_name] =\

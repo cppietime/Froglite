@@ -8,18 +8,18 @@
         "display": "Machette",
         "description": "Thick and strong\nAttack: x3",
         "attack": 3,
-        "icon": "knife"
+        "icon": "machette"
     },
     "club": {
         "display": "Thick Club",
         "description": "This is your first time clubbing\nAttack: x4",
         "attack": 4,
-        "icon": "knife"
+        "icon": "club"
     },
     "cleaver": {
         "display": "Meat Cleaver",
         "description": "Good for anything that moves\nAttack: x4",
         "attack": 4,
-        "icon": "knife"
+        "icon": "cleaver"
     }
 }

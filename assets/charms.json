@@ -9,14 +9,14 @@
     "staff": {
         "display": "Fossil",
         "description": "When it comes to magic, age means power\nMP Regain x3\nMagic Damage x1.5",
-        "icon": "spine",
+        "icon": "fossil",
         "power": 1.5,
         "mp": 2
     },
     "heart": {
         "display": "Heart",
         "description": "Why is it still beating?\nMP Regain x4\nMagic Damage x2",
-        "icon": "spine",
+        "icon": "heart",
         "power": 2,
         "mp": 3
     }

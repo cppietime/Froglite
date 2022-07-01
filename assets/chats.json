@@ -634,6 +634,88 @@
         }
         ]
     },
+    "warp_flesh_open": {
+        "message": "It appears someone else has made it this far into such a boring place. Well, I'll let you know there is not a whole let left to find if you go deeper. Don't let it get you down. If you have the right incentive for me, I will send you somewhere more fascinating. Bring me $1000, and you can enter life itself.",
+        "choices": ["Do it", "No thanks"],
+        "next": [
+        {
+            "name": "warp_flesh_fail",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 1000,
+                    "function": "<",
+                    "persists": false
+                }
+                ]
+            }
+        },
+        {
+            "name": "warp_flesh_succeed",
+            "predicate": {
+                "kind": "and",
+                "predicates": [
+                {
+                    "kind": "choice",
+                    "num": 0
+                },
+                {
+                    "kind": "var",
+                    "name": "coins",
+                    "value": 1000,
+                    "function": ">=",
+                    "persists": false
+                }
+                ]
+            }
+        },
+        {
+            "name": "warp_flesh_pass",
+            "predicate": {
+                "kind": "choice",
+                "num": 1
+            }
+        }
+        ]
+    },
+    "warp_flesh_fail": {
+        "message": "I understand that you are eager, stranger, but it appears you are not ready. Fret not. I will find you again when you are ready."
+    },
+    "warp_flesh_succeed": {
+        "message": "Yes! Excellent! Glorious! Go forth, stranger! Explore the minutiae and curiosities of the living tissue!",
+        "actions": [
+        {
+            "kind": "var",
+            "name": "coins",
+            "value": 1000,
+            "function": "-",
+            "persists": false
+        },
+        {
+            "kind": "var",
+            "name": "world_gen",
+            "value": "flesh",
+            "function": "=",
+            "persists": false
+        },
+        {
+            "kind": "warp",
+            "world_gen": "flesh",
+            "size": [20, 20],
+            "reset": true
+        }
+        ]
+    },
+    "warp_flesh_pass": {
+        "message": "Very well. Mayhaps you will change your mind."
+    },
     "npc_welcome": {
         "message": "Hello, stranger. These caves can be tricky. Keep an eye out. Down here, pure flesh is sought out the most."
     },

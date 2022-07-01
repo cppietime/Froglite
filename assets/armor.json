@@ -7,13 +7,13 @@
     "cyst": {
         "display": "Cyst Suit",
         "description": "Hardened tissues block incoming damage\nDefense x1.8",
-        "icon": "bandage",
+        "icon": "cyst",
         "defense": 1.8
     },
     "amnion": {
         "display": "Amnion",
         "description": "If it works for an embryo, it can work for you\nDefense x2",
-        "icon": "bandage",
+        "icon": "amnion",
         "defense": 2
     }
 }

@@ -29,6 +29,7 @@ class GameOverState(ui.PoppableMenu):
     button_margin: ClassVar[float] = 30
     button_padding: ClassVar[float] = 30
     screen_width: ClassVar[float] = 1440
+    y: ClassVar[float] = 40
     active_button_bg: ClassVar['Sprite']
     inactive_button_bg: ClassVar['Sprite']
     font: ClassVar['CharBank']
@@ -78,7 +79,8 @@ class GameOverState(ui.PoppableMenu):
     def rise_up(self):
         self.mainholder.base_offset.y = 1000
         anim = tween.Animation([
-            (0., tween.Tween(self.mainholder.base_offset, 'y', 1000, 0, 1))
+            (0., tween.Tween(
+                self.mainholder.base_offset, 'y', 1000, self.y, 1))
         ])
         anim.attach(self)
         self.begin_animation(anim)

@@ -30,12 +30,12 @@ from roguelike.engine import (
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
 
-DEBUG = True
-GAME_DIR_NAME = '.this_game' # TODO Set this
+DEBUG = False
+GAME_DIR_NAME = '.froglite' # TODO Set this
 
 def asset_path(base_path: str) -> str:
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
-        baesdir = sys._MEIPASS # type: ignore
+        basedir = sys._MEIPASS # type: ignore
     else:
         basedir = os.path.join(os.path.split(__file__)[0],
                                os.pardir,
@@ -218,7 +218,9 @@ class Sounds:
             if pg.mixer.music.get_busy() and self.song != pat:
                 pg.mixer.music.fadeout(fadeout)
             pg.mixer.music.load(pat)
+            logging.debug(f'Loaded music at {pat}')
             pg.mixer.music.play(loops=-1)
+            logging.debug('Began playing music')
             self.song = pat
         threading.Thread(target=_thread).start()
     
@@ -295,20 +297,20 @@ def load_assets(renderer: 'Renderer', source: str) -> None:
     Sounds.load_sounds(residuals.pop('sounds'))
     Voice.load(residuals.pop('phonemes'))
 
-def save_path():
+def save_path(dirname=GAME_DIR_NAME, savefile='save'):
     if hasattr(sys, 'frozen'):
         basedir = os.path.abspath(os.path.expanduser('~'))
-        basedir = os.path.join(basedir, GAME_DIR_NAME)
+        basedir = os.path.join(basedir, dirname)
         if not os.path.exists(basedir):
             os.mkdir(basedir)
     else:
         basedir = os.path.join(os.path.split(__file__)[0],
                                os.pardir,
                                os.pardir)
-    return os.path.abspath(os.path.join(basedir, 'save'))
+    return os.path.abspath(os.path.join(basedir, savefile))
 
-def load_save():
-    save_file = save_path()
+def load_save(dirname=GAME_DIR_NAME, savefile='save'):
+    save_file = save_path(dirname, savefile)
     if not os.path.exists(save_file):
         return
     with open(save_file) as file:
@@ -319,8 +321,8 @@ def load_save():
     persists.update(saved_p)
     Sounds.instance.set_volume(persists.get('_volume', 100) / 100.)
 
-def save_save():
+def save_save(dirname=GAME_DIR_NAME, savefile='save'):
     persists['_volume'] = int(round(Sounds.instance.volume * 100))
     vp = {'variables': variables, 'persists': persists}
-    with open(save_path(), 'w') as file:
+    with open(save_path(dirname, savefile), 'w') as file:
         json.dump(vp, file)

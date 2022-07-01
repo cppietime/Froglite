@@ -83,6 +83,9 @@ class WorldSelect(ui.PoppableMenu):
             if not value:
                 continue
             wgen = world_gen.world_generators[key]
+            highest = assets.persists.get('highests', {}).get(key, 0)
+            active_color = (1, 0, 1, 1) if highest < 100 else (.5, .8, 1, 1)
+            inactive_color = (0, 0, 0, 1) if highest < 100 else (1, 1, 0, 1)
             button = ui.build_button_widget(
                 wgen.display_name, [0, 0,
                                     self.button_w,
@@ -90,7 +93,9 @@ class WorldSelect(ui.PoppableMenu):
                 (self.button_text_margin_x, self.button_text_margin_y),
                 command=lambda _, name=key: self.button_chose(name),
                 active_bg_sprite=self.active_button_bg,
-                inactive_bg_sprite=self.inactive_button_bg)
+                inactive_bg_sprite=self.inactive_button_bg,
+                active_text_color=active_color,
+                inactive_text_color=inactive_color)
             self.holder.widgets.append(button)
         self.holder.widgets.append(ui.build_button_widget(
             "Quit", [0, 0, self.button_w, self.button_h], None,
@@ -126,9 +131,12 @@ class WorldSelect(ui.PoppableMenu):
         if index < len(self.world_keys):
             key = self.world_keys[index]
             highscore = assets.persists['highests'].get(key, 0)
+            color = (1, 1, 1, 1) if highscore < 100 else (1, 1, 0, 1)
             self.statscreen.text = f"Highest reached:\n{highscore}"
+            self.statscreen.text_color = color
         else:
             self.statscreen.text = "Goodbye"
+            self.statscreen.text_color = (1, 0, 0, 1)
         super().render_gamestate(delta_time, renderer)
     
     @classmethod

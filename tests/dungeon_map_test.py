@@ -53,7 +53,7 @@ tile_clear = 0
 meta_map = [0, 1]
 world_name = 'bspworld'
 
-# logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 # Initialize context and screen
 pg.mixer.pre_init(channels=1)
@@ -72,9 +72,9 @@ tile_size = settings.BASE_TILE_SIZE
 entity.Entity.base_size = tile_size
 
 # Initialize assets
+ui.default_font = rend.get_font('Consolas', 64, antialiasing=False, bold=True)
 dungeon.DungeonMapState.init_sprites(rend)
 entity.EnemyEntity.hp_font = dungeon.DungeonMapState.font
-ui.default_font = rend.get_font('Consolas', 64, antialiasing=False, bold=True)
 inventory_state.InventoryBaseScreen.init_globs()
 world_select.WorldSelect.init_globs()
 game_over.GameOverState.init_resources()

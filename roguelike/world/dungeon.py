@@ -40,6 +40,7 @@ from roguelike.entities import (
 )
 from roguelike.world import particle
 from roguelike.bag import consumables
+from roguelike.states import ui
 
 Pos = Tuple[int, int]
 
@@ -512,6 +513,6 @@ class DungeonMapState(gamestate.GameState):
     
     @classmethod
     def init_sprites(cls, renderer: 'Renderer') -> None:
-        cls.font = renderer.get_font('Consolas', 64)
+        cls.font = ui.default_font#renderer.get_font('Consolas', 64)
         cls.base_text_scale = cls.font.scale_to_bound(
             "O", (cls.base_tile_size,) * 2)

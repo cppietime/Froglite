@@ -195,7 +195,7 @@ class InventoryBaseScreen(ui.PoppableMenu):
         cls.header_scale = cls.font.scale_to_bound(
             "Spells", (w, h))
         cls.text_scale = cls.font.scale_to_bound(
-            "Spells", (w * .5, h * .5))
+            "Spells", (w * .707, h * .707))
         cls.active_button_bg = assets.Sprites.instance.button_active
         cls.inactive_button_bg = assets.Sprites.instance.button_inactive
         _itemslotsubscreens = {
@@ -223,7 +223,7 @@ class ItemSlotSubscreen(ui.PoppableMenu):
     item_spacing: ClassVar[float] = item_row_height + icon_size
     back_button_sep: ClassVar[float] = 30
     scroll_threshold: ClassVar[int] = 4
-    scroll_zero_point: ClassVar[float] = 1080 / (100 + 100 + 15) / 2 - 1
+    scroll_zero_point: ClassVar[float] = 2
     desc_padding: ClassVar[float] = 60
     
     def __init__(self, *args, **kwargs):

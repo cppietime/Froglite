@@ -12,7 +12,7 @@
     "freeze": {
         "kind": "freeze",
         "display": "Freeze",
-        "icon": "fireball",
+        "icon": "freeze",
         "description": "Temporarily stalls enemies\nMP: 15",
         "cost": 15,
         "stall": 3

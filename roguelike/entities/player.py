@@ -55,14 +55,17 @@ class PlayerEntity(entity.FightingEntity):
         if 'coins' not in assets.variables:
             assets.variables['coins'] = 0
         
-        if assets.DEBUG:
-            assets.variables['coins'] = 9999
-        
         for name, spell in spells.items.items():
-            if (assets.persists.get(name, False) or assets.DEBUG)\
+            if assets.persists.get(name, False)\
                     and self.inventory[spell] == 0:
                 self.inventory.give_item(spell, 1)
-    
+        
+        # DEBUGGING
+        if assets.DEBUG:
+            assets.variables['coins'] = 9999
+            for name, itm in item.items.items():
+                self.inventory.give_item(itm, 1)
+        
     walk_length: ClassVar[float] = .25
     
     def update_entity(self, delta_time, state, _):
@@ -268,16 +271,19 @@ class PlayerEntity(entity.FightingEntity):
         assets.Sounds.instance.ah.play()
         state.cancel_events()
         def _event(_state, event):
+            while state.locked():
+                yield True
+            self.anim.state = sprite.AnimState.DIE
+            anim = tween.Animation([
+                (0., tween.Tween(state, 'blackout', 0, 1, 1.5))
+            ])
+            anim.attach(_state)
+            _state.begin_animation(anim)
             while _state.locked():
                 yield True
             # _state.manager.pop_state()
             _state.manager.push_state(game_over.GameOverState())
             yield False
-        anim = tween.Animation([
-            (0., tween.Tween(state, 'blackout', 0, 1, 1.5))
-        ])
-        anim.attach(state)
-        state.begin_animation(anim)
         state.queue_event(event_manager.Event(_event))
     
     attack_length: ClassVar[float] = .25

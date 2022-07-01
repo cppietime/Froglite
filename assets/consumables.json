@@ -2,7 +2,7 @@
     "dew": {
         "display": "Coffee",
         "description": "Heals 5 HP",
-        "icon": "potion",
+        "icon": "dew",
         "kind": "heal",
         "amount": 5,
         "message": "You are healed {} HP!"
@@ -18,7 +18,7 @@
     "ichor": {
         "display": "Cortisol",
         "description": "Heals 50 HP",
-        "icon": "potion",
+        "icon": "ichor",
         "kind": "heal",
         "amount": 50,
         "message": "You are healed {} HP!"
@@ -26,7 +26,7 @@
     "ether": {
         "display": "Ether",
         "description": "Restores 10 MP",
-        "icon": "potion",
+        "icon": "ether",
         "kind": "heal",
         "type": "MP",
         "amount": 10,
@@ -35,7 +35,7 @@
     "elixir": {
         "display": "Elixir",
         "description": "Restores 50 MP",
-        "icon": "potion",
+        "icon": "elixir",
         "kind": "heal",
         "type": "MP",
         "amount": 50,

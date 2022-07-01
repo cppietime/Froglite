@@ -12,10 +12,12 @@
         "filter": 9728
     },
     "effects": {
-        "source": "effects.png"
+        "source": "effects.png",
+        "filter": 9728
     },
     "player": {
-        "source": "player_debug.png"
+        "source": "player_debug.png",
+        "filter": 9728
     },
     "tile": {
         "source": "tile.png",
@@ -25,6 +27,11 @@
         "source": "vignette.png"
     },
     "slow_chaser": {
-        "source": "monsters/slow_chaser.png"
+        "source": "monsters/slow_chaser.png",
+        "filter": 9728
+    },
+    "npcs": {
+        "source": "npcs.png",
+        "filter": 9728
     }
 }
