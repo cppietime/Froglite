@@ -66,6 +66,7 @@ def init(rend: renderer.Renderer):
     
     assets.load_save()
     assets.persists.setdefault('unlocked', {})
+    assets.persists.setdefault('current', {})
     assets.persists['unlocked'][settings.FIRST_WORLD] = True
     assets.persists.setdefault('highests', {})
     

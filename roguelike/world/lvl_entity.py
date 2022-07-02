@@ -2,6 +2,7 @@ import logging
 import threading
 from typing import (
     cast,
+    Dict,
     Tuple,
     TYPE_CHECKING
 )
@@ -14,7 +15,8 @@ from roguelike.engine import (
 from roguelike.entities import entity
 from roguelike.world import (
     dungeon,
-    world_gen
+    world_gen,
+    saving
 )
 
 if TYPE_CHECKING:
@@ -95,6 +97,7 @@ def warp(state: dungeon.DungeonMapState,
         assets.persists['highests'][world_type_name] =\
             max(assets.persists['highests'].get(world_type_name, 0),\
                 assets.variables['difficulty'])
+        saving.save_game(world_type_name, _state.dungeon_map.player)
         def _thrd():
             _state.generate_from(world_type, size)
         thread = threading.Thread(target = _thrd)

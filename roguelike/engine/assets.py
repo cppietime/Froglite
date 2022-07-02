@@ -23,6 +23,7 @@ import numpy as np
 import pygame as pg
 
 import lpyc_tts_shotgunllama as tts # type: ignore
+from roguelike import settings
 from roguelike.engine import (
     sprite
 )
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
 
 DEBUG = False
-GAME_DIR_NAME = '.froglite' # TODO Set this
+GAME_DIR_NAME = settings.SAVE_NAME
 
 def asset_path(base_path: str) -> str:
     if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):

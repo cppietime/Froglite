@@ -1,6 +1,7 @@
 import logging
 import threading
 from typing import (
+    Dict,
     TYPE_CHECKING
 )
 
@@ -16,7 +17,8 @@ from roguelike.states import (
 from roguelike.world import (
     game_over,
     dungeon,
-    world_gen
+    world_gen,
+    saving
 )
 
 if TYPE_CHECKING:
@@ -115,10 +117,18 @@ class WorldSelect(ui.PoppableMenu):
             map_size = (20, 20) # TODO
             tile_size = settings.BASE_TILE_SIZE
             game_over.reset_func()
+            
+            # Need this for preemptive fetching difficulty
+            current_save: Dict[str, Any] =\
+                assets.persists['current'].get(name, {})
+            assets.variables['difficulty'] =\
+                current_save.get('difficulty', 0)
+            
             gen = world_gen.world_generators[name]
             state = dungeon.DungeonMapState(tile_size=tile_size,
                                             base_generator=gen,
                                             base_size=map_size)
+            saving.load_game(name, state.dungeon_map.player)
             self.die()
             self.manager.push_state(state)
         threading.Thread(target=_thread).start()
@@ -131,8 +141,9 @@ class WorldSelect(ui.PoppableMenu):
         if index < len(self.world_keys):
             key = self.world_keys[index]
             highscore = assets.persists['highests'].get(key, 0)
+            current = assets.persists['current'].get(key, {}).get('difficulty', 0)
             color = (1, 1, 1, 1) if highscore < 100 else (1, 1, 0, 1)
-            self.statscreen.text = f"Highest reached:\n{highscore}"
+            self.statscreen.text = f"Highest reached:\n{highscore}\nCurrent:\n{current}"
             self.statscreen.text_color = color
         else:
             self.statscreen.text = "Goodbye"

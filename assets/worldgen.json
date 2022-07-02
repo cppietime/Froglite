@@ -91,6 +91,15 @@
             "weight": 2
         },
         {
+            "name": "npc_dont_listen",
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">=", 9, false],
+            ["difficulty", "<=", 20, false]
+            ],
+            "weight": 2
+        },
+        {
             "name": "item_shop",
             "limit": 1,
             "weight": 1,
@@ -147,7 +156,7 @@
         },
         {
             "key": "Key",
-            "count": [1, 4],
+            "count": [1, 3],
             "weight": 3,
             "predicates": [
             ["difficulty", ">=", 15, false]
@@ -202,7 +211,7 @@
         },
         {
             "name": "warp_cavern",
-            "weight": 1,
+            "weight": 3,
             "limit": 1,
             "predicates": [
             ["difficulty", ">", 34, false]
@@ -213,7 +222,25 @@
             "weight": 10,
             "limit": 1,
             "predicates": [
-            ["difficulty", ">", 2, false]
+            ["difficulty", ">", 2, false],
+            ["difficulty", "<=", 12, false]
+            ]
+        },
+        {
+            "name": "npc_exit",
+            "weight": 10,
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">", 15, false],
+            ["difficulty", "<=", 30, false]
+            ]
+        },
+        {
+            "name": "npc_no_home",
+            "weight": 10,
+            "limit": 1,
+            "predicates": [
+            ["difficulty", ">", 33, false]
             ]
         },
         {
@@ -258,7 +285,17 @@
         }
         ],
         "boredom": 5,
-        "music": "wind.wav"
+        "music": "wind.wav",
+        "exits": [
+        {
+            "key": "Key",
+            "count": [1, 3],
+            "weight": 1
+        },
+        {
+            "weight": 2
+        }
+        ]
     },
     "perlin": {
         "display": "Caverns",
@@ -305,6 +342,15 @@
             ]
         },
         {
+            "name": "npc_came_here",
+            "limit": 1,
+            "weight": 2,
+            "predicates": [
+            ["difficulty", ">=", 20, false],
+            ["difficulty", "<=", 38, false]
+            ]
+        },
+        {
             "name": "warp_hell",
             "limit": 1,
             "weight": 16,
@@ -345,7 +391,17 @@
         }
         ],
         "music": "cavern.wav",
-        "boredom": 6
+        "boredom": 6,
+        "exits": [
+        {
+            "key": "Key",
+            "count": [1, 3],
+            "weight": 1
+        },
+        {
+            "weight": 2
+        }
+        ]
     },
     "hell": {
         "display": "Hell",

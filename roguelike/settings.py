@@ -13,3 +13,4 @@ FIRST_WORLD = 'bspworld'
 TYPEFACE = 'Consolas'
 FONT_SIZE = 64
 NAME = 'Froglite'
+SAVE_NAME = '.froglite'

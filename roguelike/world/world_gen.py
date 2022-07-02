@@ -491,7 +491,13 @@ class WorldGenerator:
                 'action_cost': 1e10,
                 'attack': 0,
                 'defense': 1e10,
-                'max_hp': 100
+                'max_hp': 100,
+                'drops': [
+                {
+                    "name": "drop_ichor",
+                    "weight": 1
+                }
+                ]
             }))
         
         while True:

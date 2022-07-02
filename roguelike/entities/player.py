@@ -23,7 +23,10 @@ from roguelike.bag import (
     item,
     spells
 )
-from roguelike.world import game_over
+from roguelike.world import (
+    game_over,
+    saving
+)
 
 if TYPE_CHECKING:
     from roguelike.engine.renderer import Renderer
@@ -127,7 +130,8 @@ class PlayerEntity(entity.FightingEntity):
                 yield False
             state.start_event(event_manager.Event(_event))
             return
-        if state.inputstate.keys[pg.K_RETURN][inputs.KeyState.DOWN]:
+        if state.inputstate.keys[pg.K_RETURN][inputs.KeyState.DOWN]\
+                and assets.persists.get('tutorial', 0) >= 3:
             # Attempt to attack
             t_x, t_y = self.dungeon_pos
             if self.anim.direction == sprite.AnimDir.UP:
@@ -268,6 +272,7 @@ class PlayerEntity(entity.FightingEntity):
         
     def entity_die(self, state):
         logging.debug('Player is dead')
+        saving.die(assets.variables['world_gen'])
         assets.Sounds.instance.ah.play()
         state.cancel_events()
         def _event(_state, event):

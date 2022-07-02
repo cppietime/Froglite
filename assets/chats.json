@@ -140,6 +140,13 @@
                 "num": 1
             }
         }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "F-R-ee-z k-r-ae-K-R",
+            "frequency": 140
+        }
         ]
     },
     "buy_freeze_succeed": {
@@ -299,6 +306,13 @@
                 ]
             }
         }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "P-R-t-c-i-s y-r h-AE-p-ee-n-e-s",
+            "frequency": 60
+        }
         ]
     },
     "shop_fail": {
@@ -407,6 +421,13 @@
                 ]
             }
         }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "P-R-t-c-i-s y-r h-AE-p-ee-n-e-s",
+            "frequency": 60
+        }
         ]
     },
     "hell_shop_fail": {
@@ -478,6 +499,13 @@
                 "kind": "choice",
                 "num": 1
             }
+        }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "W-U-N h-U-n-d-r-i-d",
+            "frequency": 100
         }
         ]
     },
@@ -563,6 +591,13 @@
                 "num": 1
             }
         }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "B-U-G w-ee-ng-z p-l-EE-Z",
+            "frequency": 110
+        }
         ]
     },
     "warp_cavern_fail": {
@@ -610,6 +645,13 @@
                 "kind": "choice",
                 "num": 1
             }
+        }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "G-E-Y uu-n j-R-AE-r-d",
+            "frequency": 66
         }
         ]
     },
@@ -683,6 +725,13 @@
                 "num": 1
             }
         }
+        ],
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "W-I-T-N-e-s l-A-Y-f",
+            "frequency": 70
+        }
         ]
     },
     "warp_flesh_fail": {
@@ -717,19 +766,54 @@
         "message": "Very well. Mayhaps you will change your mind."
     },
     "npc_welcome": {
-        "message": "Hello, stranger. These caves can be tricky. Keep an eye out. Down here, pure flesh is sought out the most."
+        "message": "Hello, stranger. These caves can be tricky. Keep an eye out. Down here, pure flesh is sought out the most.",
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "W-E-L-k-u-m",
+            "frequency": 100
+        }
+        ]
     },
     "npc_infested": {
-        "message": "You aren't from here. These caverns are infested with creatures of hunger only, not of reason. Study their patterns and outsmart them."
+        "message": "You aren't from here. These caverns are infested with creatures of hunger only, not of reason. Study their patterns and outsmart them.",
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "thh-e-r E-V-r-ee-w-r",
+            "frequency": 77
+        }
+        ]
     },
     "npc_finite": {
-        "message": "You are a stranger. Your finite brain cannot comprehend the depth and depravity of this realm. But then again, who am I to talk?"
+        "message": "You are a stranger. Your finite brain cannot comprehend the depth and depravity of this realm. But then again, who am I to talk?",
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "s-t-R-AE-Y-N-j-r",
+            "frequency": 80
+        }
+        ]
     },
     "npc_dont_listen": {
-        "message": "Don't listen to these other NPCs. There is no goal to life. There is no point in death."
+        "message": "Don't listen to these other NPCs. There is no goal to life. There is no point in death.",
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "D-O-U-N-T L-I-s-i-n",
+            "frequency": 88
+        }
+        ]
     },
     "npc_exit": {
-        "message": "Why can't I exit? I can only ever go deeper into these catacombs."
+        "message": "Why can't I exit? I can only ever go deeper into these catacombs.",
+        "actions": [
+        {
+            "kind": "speak",
+            "sentence": "L-E-T m-ee A-U-T",
+            "frequency": 90
+        }
+        ]
     },
     "npc_no_home": {
         "message": "Keep searching, stranger. No matter how far you search, you will never find a home."
@@ -749,6 +833,11 @@
             "name": "spoke_flesh",
             "value": true,
             "function": "="
+        },
+        {
+            "kind": "speak",
+            "sentence": "A-Y n-o-u W-U-T y-uu-v d-U-N",
+            "frequency": 100
         }
         ]
     }
